@@ -129,6 +129,25 @@ export const LeavePage: React.FC = () => {
     return matchesSearch && matchesType;
   });
 
+  // Kazakhstan Labor Code (ТК РК ст. 88): оплачиваемый трудовой отпуск — не менее 24 календарных дней
+  const ANNUAL_QUOTA = 24;
+
+  // Calculate used vacation days from approved requests
+  const relevantApprovedLeaves = requests.filter((r) => {
+    if (r.status !== 'APPROVED') return false;
+    // For regular employees, show their personal balance; for HR/Admins, show corporate stats
+    return user?.role === 'EMPLOYEE' ? r.employeeId === user.id : true;
+  });
+
+  const usedAnnualDays = relevantApprovedLeaves
+    .filter((r) => r.leaveType === 'ANNUAL')
+    .reduce((sum, r) => sum + r.daysCount, 0);
+
+  const usedSickDays = relevantApprovedLeaves
+    .filter((r) => r.leaveType === 'SICK')
+    .reduce((sum, r) => sum + r.daysCount, 0);
+
+  const availableAnnualDays = Math.max(0, ANNUAL_QUOTA - usedAnnualDays);
   const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
 
   return (
@@ -160,48 +179,72 @@ export const LeavePage: React.FC = () => {
 
       {/* Labor Code of Kazakhstan (ТК РК) Vacation Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              Баланс отпуска (ТК РК ст. 88)
-            </span>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-2xl font-extrabold text-blue-600">17</span>
-              <span className="text-xs text-slate-500">из 24 дней доступно</span>
+        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                Баланс отпуска (ТК РК ст. 88)
+              </span>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="text-2xl font-extrabold text-blue-600">{availableAnnualDays}</span>
+                <span className="text-xs text-slate-500">из {ANNUAL_QUOTA} дней доступно</span>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 shrink-0">
+              <Palmtree className="w-5 h-5" />
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
-            <Palmtree className="w-5 h-5" />
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div
+              className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, (availableAnnualDays / ANNUAL_QUOTA) * 100)}%` }}
+            />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              Использовано в 2026 году
-            </span>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-2xl font-extrabold text-slate-800">7</span>
-              <span className="text-xs text-slate-500">дней трудового отпуска</span>
+        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                Использовано в 2026 году
+              </span>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="text-2xl font-extrabold text-slate-800">{usedAnnualDays}</span>
+                <span className="text-xs text-slate-500">дн. отпуска ({usedSickDays} дн. больничных)</span>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div
+              className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, (usedAnnualDays / ANNUAL_QUOTA) * 100)}%` }}
+            />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              Заявки на рассмотрении
-            </span>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-2xl font-extrabold text-amber-600">{pendingCount}</span>
-              <span className="text-xs text-slate-500">требуют резолюции</span>
+        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                Заявки на рассмотрении
+              </span>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="text-2xl font-extrabold text-amber-600">{pendingCount}</span>
+                <span className="text-xs text-slate-500">требуют резолюции</span>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 shrink-0">
+              <Clock className="w-5 h-5" />
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
-            <Clock className="w-5 h-5" />
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div
+              className="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: `${pendingCount > 0 ? 100 : 0}%` }}
+            />
           </div>
         </div>
       </div>

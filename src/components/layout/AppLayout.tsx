@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { cn } from '@/lib/utils';
-import { isDemoModeEnabled, setDemoModeEnabled } from '@/lib/api';
+import { isDemoModeEnabled, setDemoModeEnabled, api } from '@/lib/api';
 import { Radio, X } from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
@@ -38,19 +38,29 @@ export const AppLayout: React.FC = () => {
 
         {/* Demo Mode Notice Banner */}
         {isDemo && !bannerDismissed && (
-          <div className="bg-amber-50 border-b border-amber-200/70 px-4 py-2 text-xs flex items-center justify-between gap-3 text-amber-900">
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2.5 text-amber-900">
             <div className="flex items-center gap-2 overflow-hidden">
               <Radio className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
               <span className="truncate">
-                <strong>Демо-режим активен (Jana Post Hackathon Edition):</strong> данные изолированы локально. Все изменения сохраняются в сессии.
+                <strong>Демо-режим активен (Jana Post Hackathon Edition):</strong> данные изолированы локально в браузере. Все изменения сохраняются.
               </span>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  api.demo.resetData();
+                  window.location.reload();
+                }}
+                className="text-amber-800 hover:text-amber-950 underline text-[11px] font-medium"
+                title="Сбросить все тестовые изменения в демо-данных"
+              >
+                Сбросить демо-данные
+              </button>
               <button
                 onClick={() => setDemoModeEnabled(false)}
-                className="font-bold underline text-amber-900 hover:text-amber-700"
+                className="font-bold text-[11px] px-2.5 py-0.5 rounded-lg bg-amber-200/70 hover:bg-amber-200 text-amber-950 transition-colors"
               >
-                Подключить Live API
+                Подключить Live API →
               </button>
               <button
                 onClick={() => setBannerDismissed(true)}
