@@ -6,8 +6,19 @@ import { z } from 'zod';
 import { useAuth } from './AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Send, Eye, EyeOff, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
+import {
+  Send,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Sparkles,
+  AlertCircle,
+  Radio,
+  Database,
+  ArrowRight,
+} from 'lucide-react';
 import { DEMO_USERS } from '@/lib/api/mockData';
+import { isDemoModeEnabled, setDemoModeEnabled } from '@/lib/api';
 
 const loginSchema = z.object({
   email: z.string().email('Введите корректный email адрес'),
@@ -21,11 +32,13 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState<boolean>(() => isDemoModeEnabled());
 
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,6 +56,25 @@ export const LoginPage: React.FC = () => {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Ошибка аутентификации';
       setAuthError(msg);
+    }
+  };
+
+  const handleToggleMode = (enableDemo: boolean) => {
+    setIsDemo(enableDemo);
+    setAuthError(null);
+    setDemoModeEnabled(enableDemo);
+  };
+
+  const handleSwitchToDemoAndLogin = async () => {
+    localStorage.setItem('jp_demo_mode_enabled', 'true');
+    setIsDemo(true);
+    setAuthError(null);
+    const values = getValues();
+    try {
+      await login(values.email, values.password);
+      navigate('/dashboard');
+    } catch {
+      window.location.reload();
     }
   };
 
@@ -72,10 +104,58 @@ export const LoginPage: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
         <div className="bg-white py-8 px-6 sm:px-10 shadow-xl shadow-slate-200/50 rounded-3xl border border-[#E4E7EC]">
+          {/* Mode Selector Pill */}
+          <div className="mb-6 p-1.5 rounded-2xl bg-slate-100 flex items-center justify-between text-xs">
+            <button
+              type="button"
+              onClick={() => handleToggleMode(true)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold transition-all ${
+                isDemo
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Демо-режим (Автономно)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleMode(false)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold transition-all ${
+                !isDemo
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Live API (localhost:3000)</span>
+            </button>
+          </div>
+
           {authError && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{authError}</span>
+            <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-3">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                <span className="font-medium">{authError}</span>
+              </div>
+
+              {!isDemo && (
+                <div className="pt-2 border-t border-rose-200/60">
+                  <p className="text-slate-600 mb-2">
+                    Бэкенд на порту 3000 сейчас не запущен? Переключитесь в Демо-режим для автономной презентации:
+                  </p>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                    rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                    onClick={handleSwitchToDemoAndLogin}
+                  >
+                    Включить Демо-режим и войти
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
