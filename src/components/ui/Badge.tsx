@@ -114,6 +114,10 @@ export const LeaveTypeBadge: React.FC<{ type: LeaveType }> = ({ type }) => {
       return <Badge variant="purple">Декретный отпуск</Badge>;
     case 'STUDY':
       return <Badge variant="warning">Учебный отпуск</Badge>;
+    case 'SALARY_ADVANCE':
+      return <Badge variant="success">Аванс по зарплате</Badge>;
+    case 'WORK_CERTIFICATE':
+      return <Badge variant="info">Справка с работы</Badge>;
     default:
       return <Badge variant="neutral">{type}</Badge>;
   }

@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Send,
+  GraduationCap,
+  Bot,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -57,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Отпуска и отгулы',
+      label: 'Мои заявки',
       to: '/leave',
       icon: CalendarDays,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
@@ -66,6 +68,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Задачи',
       to: '/tasks',
       icon: CheckSquare,
+      roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
+    },
+    {
+      label: 'Jana Academy',
+      to: '/academy',
+      icon: GraduationCap,
+      badge: 'LMS',
+      roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
+    },
+    {
+      label: 'HR-ассистент',
+      to: '/ai-assistant',
+      icon: Bot,
+      badge: 'AI',
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {

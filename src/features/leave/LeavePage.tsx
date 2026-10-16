@@ -182,7 +182,7 @@ export const LeavePage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-[#101828]">Отпуска и отгулы</h1>
+            <h1 className="text-2xl font-extrabold text-[#101828]">Мои заявки и HR-сервисы</h1>
             {pendingCount > 0 && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
                 {pendingCount} на согласовании
@@ -190,7 +190,7 @@ export const LeavePage: React.FC = () => {
             )}
           </div>
           <p className="text-xs sm:text-sm text-[#667085] mt-1">
-            Управление трудовыми отпусками, больничными листами и отсутствиями сотрудников Jana Post
+            Оформление электронных заявок на отпуск (ТК РК ст. 88), аванс по зарплате и справки с места работы
           </p>
         </div>
 
@@ -316,12 +316,14 @@ export const LeavePage: React.FC = () => {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
           >
-            <option value="ALL">Все типы отпусков</option>
-            <option value="ANNUAL">Ежегодный</option>
-            <option value="SICK">Больничный</option>
-            <option value="UNPAID">Без содержания</option>
-            <option value="STUDY">Учебный</option>
-            <option value="MATERNITY">Декретный</option>
+            <option value="ALL">Все типы заявок</option>
+            <option value="ANNUAL">🏖️ Ежегодный отпуск (ТК РК ст. 88)</option>
+            <option value="SALARY_ADVANCE">💰 Аванс по зарплате</option>
+            <option value="WORK_CERTIFICATE">📄 Справка с места работы</option>
+            <option value="SICK">🏥 Больничный лист</option>
+            <option value="UNPAID">⏳ Без содержания</option>
+            <option value="STUDY">🎓 Учебный отпуск</option>
+            <option value="MATERNITY">👶 Декретный отпуск</option>
           </select>
 
           <div className="relative w-48 sm:w-64">
@@ -384,12 +386,24 @@ export const LeavePage: React.FC = () => {
 
                     {/* Period */}
                     <td className="py-3.5 px-4 font-medium text-slate-700 whitespace-nowrap">
-                      {formatKazakhstanDate(req.startDate)} — {formatKazakhstanDate(req.endDate)}
+                      {req.leaveType === 'SALARY_ADVANCE' ? (
+                        <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                          {req.amount ? `${req.amount.toLocaleString()} ₸` : '150 000 ₸'}
+                        </span>
+                      ) : req.leaveType === 'WORK_CERTIFICATE' ? (
+                        <span className="text-blue-700 font-medium">Электронная справка</span>
+                      ) : (
+                        `${formatKazakhstanDate(req.startDate)} — ${formatKazakhstanDate(req.endDate)}`
+                      )}
                     </td>
 
                     {/* Days */}
                     <td className="py-3.5 px-4 font-mono font-bold text-blue-600">
-                      {req.daysCount} дн.
+                      {req.leaveType === 'SALARY_ADVANCE'
+                        ? '15-е число'
+                        : req.leaveType === 'WORK_CERTIFICATE'
+                        ? '1 раб. день'
+                        : `${req.daysCount} дн.`}
                     </td>
 
                     {/* Reason */}

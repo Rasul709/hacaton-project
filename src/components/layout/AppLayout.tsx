@@ -6,6 +6,7 @@ import { GlobalSearchModal } from './GlobalSearchModal';
 import { cn } from '@/lib/utils';
 import { isDemoModeEnabled, setDemoModeEnabled, api } from '@/lib/api';
 import { Radio, X } from 'lucide-react';
+import { AiAssistantFloatingWidget } from '@/features/ai-assistant/AiAssistantFloatingWidget';
 
 export const AppLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -81,6 +82,9 @@ export const AppLayout: React.FC = () => {
 
       {/* Global Search Dialog */}
       <GlobalSearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Floating AI HR Assistant Widget */}
+      <AiAssistantFloatingWidget />
     </div>
   );
 };

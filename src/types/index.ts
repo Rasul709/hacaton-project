@@ -61,7 +61,15 @@ export interface AttendanceRecord {
   notes?: string;
 }
 
-export type LeaveType = 'ANNUAL' | 'SICK' | 'UNPAID' | 'MATERNITY' | 'STUDY';
+export type LeaveType =
+  | 'ANNUAL'
+  | 'SICK'
+  | 'UNPAID'
+  | 'MATERNITY'
+  | 'STUDY'
+  | 'SALARY_ADVANCE'
+  | 'WORK_CERTIFICATE';
+
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface LeaveRequest {
@@ -76,6 +84,7 @@ export interface LeaveRequest {
   reason: string;
   status: LeaveStatus;
   submittedAt: string;
+  amount?: number; // For SALARY_ADVANCE
   reviewerId?: string;
   reviewerName?: string;
   reviewComment?: string;
@@ -100,7 +109,7 @@ export interface TaskItem {
   completedAt?: string;
 }
 
-export type NotificationType = 'LEAVE' | 'TASK' | 'ATTENDANCE' | 'SYSTEM';
+export type NotificationType = 'LEAVE' | 'TASK' | 'ATTENDANCE' | 'ACADEMY' | 'SYSTEM';
 
 export interface AppNotification {
   id: string;
@@ -110,6 +119,60 @@ export interface AppNotification {
   isRead: boolean;
   createdAt: string;
   link?: string;
+}
+
+// Jana Academy LMS Types
+export interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: QuizOption[];
+  explanation: string;
+}
+
+export interface CourseLesson {
+  id: string;
+  title: string;
+  durationMinutes: number;
+  content: string; // Markdown or text
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  estimatedMinutes: number;
+  lessonsCount: number;
+  lessons: CourseLesson[];
+  quiz: QuizQuestion[];
+  isMandatory: boolean;
+  badgeName: string;
+  progressPercent: number;
+  isCompleted: boolean;
+  score?: number;
+}
+
+// AI HR Assistant Types
+export interface KnowledgeSource {
+  title: string;
+  document: string;
+  section: string;
+  confidence: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  sources?: KnowledgeSource[];
+  isOutOfScope?: boolean;
 }
 
 export interface DashboardOverview {

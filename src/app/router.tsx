@@ -32,6 +32,12 @@ const NotificationsPage = React.lazy(() =>
 const SettingsPage = React.lazy(() =>
   import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))
 );
+const AcademyPage = React.lazy(() =>
+  import('@/features/academy/AcademyPage').then((m) => ({ default: m.AcademyPage }))
+);
+const AiAssistantPage = React.lazy(() =>
+  import('@/features/ai-assistant/AiAssistantPage').then((m) => ({ default: m.AiAssistantPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div className="space-y-6 animate-pulse p-1 text-left">
@@ -109,6 +115,14 @@ export const router = createBrowserRouter([
           {
             path: 'settings',
             element: withSuspense(SettingsPage),
+          },
+          {
+            path: 'academy',
+            element: withSuspense(AcademyPage),
+          },
+          {
+            path: 'ai-assistant',
+            element: withSuspense(AiAssistantPage),
           },
         ],
       },

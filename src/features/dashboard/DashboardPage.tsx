@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { MetricCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatKazakhstanDate } from '@/lib/utils';
+import { EmployeeDashboardView } from './EmployeeDashboardView';
 import {
   Users,
   UserCheck,
@@ -59,6 +60,11 @@ export const DashboardPage: React.FC = () => {
     queryFn: () => api.dashboard.getOverview(),
   });
 
+  const isEmployee = user?.role === 'EMPLOYEE';
+  const [viewMode, setViewMode] = useState<'OPERATIONAL' | 'PERSONAL'>(
+    isEmployee ? 'PERSONAL' : 'OPERATIONAL'
+  );
+
   const handleExportSummary = () => {
     if (!dashboard) return;
     const summaryData = [
@@ -82,6 +88,30 @@ export const DashboardPage: React.FC = () => {
     ]);
     toast.success('Экспорт завершен', 'Операционная сводка выгружена в Excel / CSV');
   };
+
+  // If in personal view mode, render EmployeeDashboardView
+  if (viewMode === 'PERSONAL') {
+    return (
+      <div className="space-y-4">
+        {!isEmployee && (
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 px-4 py-2.5 rounded-xl">
+            <span className="text-xs font-semibold text-blue-900">
+              👁️ Режим предпросмотра: Личный кабинет работника (Контур 2 ТЗ)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs bg-white text-blue-700 hover:bg-blue-100"
+              onClick={() => setViewMode('OPERATIONAL')}
+            >
+              ← Вернуться к операционной сводке компании
+            </Button>
+          </div>
+        )}
+        <EmployeeDashboardView />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -136,6 +166,14 @@ export const DashboardPage: React.FC = () => {
 
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode('PERSONAL')}
+            title="Открыть персональный вид сотрудника"
+          >
+            👤 Мой кабинет
+          </Button>
           <Button
             variant="outline"
             size="sm"
