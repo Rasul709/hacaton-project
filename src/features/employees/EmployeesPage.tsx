@@ -118,19 +118,39 @@ export const EmployeesPage: React.FC = () => {
   const total = employeeResult?.total || 0;
   const totalPages = employeeResult?.totalPages || 1;
 
-  const handleExport = () => {
-    exportToCsv('JanaPost_Shtat_Sotrudnikov', employees, [
-      { key: 'employeeId', label: 'Табельный номер' },
-      { key: 'lastName', label: 'Фамилия' },
-      { key: 'firstName', label: 'Имя' },
-      { key: 'departmentName', label: 'Департамент' },
-      { key: 'jobTitle', label: 'Должность' },
-      { key: 'email', label: 'Корпоративный Email' },
-      { key: 'phone', label: 'Телефон' },
-      { key: 'status', label: 'Статус' },
-      { key: 'startDate', label: 'Дата приема' },
-    ]);
-    toast.success('Экспорт завершен', 'Файл таблицы штата успешно выгружен в формате Excel/CSV');
+  const handleExport = async () => {
+    try {
+      const allRes = await api.employees.getAll({ limit: 1000 });
+      const exportList = allRes.data && allRes.data.length > 0 ? allRes.data : employees;
+      exportToCsv('JanaPost_Shtat_Sotrudnikov', exportList, [
+        { key: 'employeeId', label: 'Табельный номер' },
+        { key: 'lastName', label: 'Фамилия' },
+        { key: 'firstName', label: 'Имя' },
+        { key: 'departmentName', label: 'Департамент' },
+        { key: 'jobTitle', label: 'Должность' },
+        { key: 'email', label: 'Корпоративный Email' },
+        { key: 'phone', label: 'Телефон' },
+        { key: 'status', label: 'Статус' },
+        { key: 'startDate', label: 'Дата приема' },
+      ]);
+      toast.success(
+        'Экспорт завершен',
+        `Штатное расписание (${exportList.length} сотрудников) выгружено в Excel / CSV`
+      );
+    } catch {
+      exportToCsv('JanaPost_Shtat_Sotrudnikov', employees, [
+        { key: 'employeeId', label: 'Табельный номер' },
+        { key: 'lastName', label: 'Фамилия' },
+        { key: 'firstName', label: 'Имя' },
+        { key: 'departmentName', label: 'Департамент' },
+        { key: 'jobTitle', label: 'Должность' },
+        { key: 'email', label: 'Корпоративный Email' },
+        { key: 'phone', label: 'Телефон' },
+        { key: 'status', label: 'Статус' },
+        { key: 'startDate', label: 'Дата приема' },
+      ]);
+      toast.success('Экспорт завершен', 'Текущая страница штата выгружена в Excel / CSV');
+    }
   };
 
   const handleSaveEmployee = async (values: any) => {

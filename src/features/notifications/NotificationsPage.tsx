@@ -15,10 +15,12 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/Toast';
 
 export const NotificationsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const toast = useToast();
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
 
   const { data: notifications = [], isLoading, error } = useQuery({
@@ -30,6 +32,10 @@ export const NotificationsPage: React.FC = () => {
     mutationFn: (id: string) => api.notifications.markAsRead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.info('Уведомление прочитано');
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка', err?.message);
     },
   });
 
@@ -37,6 +43,10 @@ export const NotificationsPage: React.FC = () => {
     mutationFn: () => api.notifications.markAllAsRead(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Все уведомления прочитаны', 'Счетчик новых оповещений обнулен');
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка', err?.message);
     },
   });
 

@@ -20,8 +20,10 @@ import {
   CheckCircle2,
   Clock,
   Edit2,
+  Download,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { exportToCsv } from '@/lib/utils/exportCsv';
 
 export const TasksPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -124,6 +126,41 @@ export const TasksPage: React.FC = () => {
     { status: 'DONE', label: 'Завершено', bg: 'bg-emerald-50/50', border: 'border-emerald-200' },
   ];
 
+  const handleExportTasks = () => {
+    const priorityLabels: Record<string, string> = {
+      CRITICAL: 'Критический',
+      HIGH: 'Высокий',
+      MEDIUM: 'Средний',
+      LOW: 'Низкий',
+    };
+    const statusLabels: Record<string, string> = {
+      TODO: 'К выполнению',
+      IN_PROGRESS: 'В работе',
+      DONE: 'Завершено',
+    };
+
+    exportToCsv(
+      'JanaPost_Reestr_Zadach_I_Porucheniy',
+      tasks.map((t) => ({
+        ...t,
+        statusRussian: statusLabels[t.status] || t.status,
+        priorityRussian: priorityLabels[t.priority] || t.priority,
+        dueDateFormatted: t.dueDate ? formatKazakhstanDate(t.dueDate) : 'Бессрочно',
+        createdAtFormatted: formatKazakhstanDate(t.createdAt),
+      })),
+      [
+        { key: 'title', label: 'Название задачи' },
+        { key: 'statusRussian', label: 'Текущий статус' },
+        { key: 'priorityRussian', label: 'Приоритет' },
+        { key: 'assignedToName', label: 'Ответственный сотрудник' },
+        { key: 'dueDateFormatted', label: 'Срок выполнения (дедлайн)' },
+        { key: 'createdAtFormatted', label: 'Дата постановки' },
+        { key: 'description', label: 'Детальное описание' },
+      ]
+    );
+    toast.success('Экспорт завершен', 'Реестр задач успешно выгружен в Excel / CSV');
+  };
+
   return (
     <div className="space-y-6 text-left">
       {/* Header */}
@@ -166,6 +203,15 @@ export const TasksPage: React.FC = () => {
               <span>Список</span>
             </button>
           </div>
+
+          <Button
+            variant="outline"
+            leftIcon={<Download className="w-4 h-4 text-slate-500" />}
+            onClick={handleExportTasks}
+            disabled={tasks.length === 0}
+          >
+            Экспорт задач
+          </Button>
 
           <Button
             variant="primary"

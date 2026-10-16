@@ -15,12 +15,16 @@ import {
   ChevronRight,
   Shield,
   ArrowRight,
+  Download,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/Toast';
+import { exportToCsv } from '@/lib/utils/exportCsv';
 
 export const DepartmentsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,9 +47,13 @@ export const DepartmentsPage: React.FC = () => {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: any) => api.departments.create(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+      toast.success('Департамент создан', `Отдел «${data.name}» успешно добавлен`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка создания', err?.message);
     },
   });
 
@@ -53,8 +61,12 @@ export const DepartmentsPage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Department> }) =>
       api.departments.update(id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      toast.success('Департамент обновлен', `Данные «${data.name}» сохранены`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка сохранения', err?.message);
     },
   });
 
@@ -79,6 +91,22 @@ export const DepartmentsPage: React.FC = () => {
       d.description.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleExport = () => {
+    exportToCsv(
+      'JanaPost_Otdely_I_Struktura',
+      departments,
+      [
+        { key: 'code', label: 'Код отдела' },
+        { key: 'name', label: 'Наименование департамента' },
+        { key: 'managerName', label: 'Руководитель' },
+        { key: 'employeeCount', label: 'Всего сотрудников' },
+        { key: 'activeEmployeesCount', label: 'Активных сотрудников' },
+        { key: 'description', label: 'Описание функций' },
+      ]
+    );
+    toast.success('Экспорт завершен', 'Структура департаментов выгружена в файл CSV/Excel');
+  };
+
   const deptMembers = viewEmployeesDept
     ? allEmployees.filter((e) => e.departmentId === viewEmployeesDept.id)
     : [];
@@ -99,16 +127,26 @@ export const DepartmentsPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => {
-            setSelectedDept(null);
-            setIsModalOpen(true);
-          }}
-        >
-          Создать департамент
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            leftIcon={<Download className="w-4 h-4 text-slate-500" />}
+            onClick={handleExport}
+            disabled={departments.length === 0}
+          >
+            Экспорт отделов
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => {
+              setSelectedDept(null);
+              setIsModalOpen(true);
+            }}
+          >
+            Создать департамент
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}

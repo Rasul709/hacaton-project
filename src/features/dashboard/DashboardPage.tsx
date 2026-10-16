@@ -17,7 +17,10 @@ import {
   TrendingUp,
   Activity,
   AlertCircle,
+  Download,
 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { exportToCsv } from '@/lib/utils/exportCsv';
 import {
   ResponsiveContainer,
   BarChart,
@@ -49,11 +52,36 @@ const LEAVE_LABELS: Record<string, string> = {
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const { data: dashboard, isLoading, error } = useQuery({
     queryKey: ['dashboardOverview'],
     queryFn: () => api.dashboard.getOverview(),
   });
+
+  const handleExportSummary = () => {
+    if (!dashboard) return;
+    const summaryData = [
+      { metric: 'Всего сотрудников', value: String(dashboard.totalEmployees), note: 'Штатная численность' },
+      { metric: 'Активных в штате', value: String(dashboard.activeEmployees), note: 'Действующие трудовые договоры' },
+      { metric: 'Количество департаментов', value: String(dashboard.departmentsCount), note: 'Организационная структура' },
+      { metric: 'Заявок на отпуск на рассмотрении', value: String(dashboard.pendingLeavesCount), note: 'Требуют визы руководителя' },
+      { metric: 'Явка сегодня', value: String(dashboard.attendanceTodayCount), note: `На дату ${formatKazakhstanDate(new Date())}` },
+      { metric: 'Задач в процессе выполнения', value: String(dashboard.tasksInProgressCount), note: 'Активные внутренние поручения' },
+      ...dashboard.employeesByDepartment.map((d) => ({
+        metric: `Департамент: ${d.department}`,
+        value: String(d.count),
+        note: 'Численность отдела',
+      })),
+    ];
+
+    exportToCsv('JanaPost_Operacionnaya_Svodka_Dashboard', summaryData, [
+      { key: 'metric', label: 'Показатель / Метрика' },
+      { key: 'value', label: 'Значение' },
+      { key: 'note', label: 'Примечание' },
+    ]);
+    toast.success('Экспорт завершен', 'Операционная сводка выгружена в Excel / CSV');
+  };
 
   if (isLoading) {
     return (
@@ -108,6 +136,15 @@ export const DashboardPage: React.FC = () => {
 
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="w-4 h-4 text-slate-500" />}
+            onClick={handleExportSummary}
+            title="Выгрузить сводный отчет по показателям компании в Excel / CSV"
+          >
+            Сводка (CSV)
+          </Button>
           <Button
             variant="outline"
             size="sm"

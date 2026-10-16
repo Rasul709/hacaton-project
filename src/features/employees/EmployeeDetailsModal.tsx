@@ -12,6 +12,7 @@ import {
   HeartHandshake,
   UserCheck,
   Shield,
+  Printer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -131,6 +132,15 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Printer className="w-4 h-4 text-slate-500" />}
+              onClick={() => window.print()}
+              title="Печать личной карточки работника (форма Т-2)"
+            >
+              Печать (Т-2)
+            </Button>
             {onEdit && (
               <Button
                 variant="outline"

@@ -22,6 +22,7 @@ import {
   Timer,
   Sparkles,
   Download,
+  Printer,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { exportToCsv } from '@/lib/utils/exportCsv';
@@ -152,14 +153,24 @@ export const AttendancePage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          leftIcon={<Download className="w-4 h-4 text-slate-500" />}
-          onClick={handleExportAttendance}
-          disabled={records.length === 0}
-        >
-          Экспорт табеля (Т-13)
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            leftIcon={<Printer className="w-4 h-4 text-slate-500" />}
+            onClick={() => window.print()}
+            title="Печать табеля учета рабочего времени (форма Т-13)"
+          >
+            Печать
+          </Button>
+          <Button
+            variant="outline"
+            leftIcon={<Download className="w-4 h-4 text-slate-500" />}
+            onClick={handleExportAttendance}
+            disabled={records.length === 0}
+          >
+            Экспорт табеля (Т-13)
+          </Button>
+        </div>
       </div>
 
       {/* Clock In / Clock Out Personal Widget */}

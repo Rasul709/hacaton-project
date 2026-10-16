@@ -21,8 +21,10 @@ import {
   XCircle,
   Palmtree,
   Sparkles,
+  Download,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { exportToCsv } from '@/lib/utils/exportCsv';
 
 export const LeavePage: React.FC = () => {
   const { user } = useAuth();
@@ -150,6 +152,30 @@ export const LeavePage: React.FC = () => {
   const availableAnnualDays = Math.max(0, ANNUAL_QUOTA - usedAnnualDays);
   const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
 
+  const handleExport = () => {
+    exportToCsv(
+      'JanaPost_Reestr_Otpuskov_I_Zayavleniy',
+      requests.map((r) => ({
+        ...r,
+        formattedStart: formatKazakhstanDate(r.startDate),
+        formattedEnd: formatKazakhstanDate(r.endDate),
+        formattedSubmitted: formatKazakhstanDate(r.submittedAt),
+      })),
+      [
+        { key: 'employeeName', label: 'Сотрудник' },
+        { key: 'leaveType', label: 'Тип отпуска' },
+        { key: 'formattedStart', label: 'Дата начала' },
+        { key: 'formattedEnd', label: 'Дата окончания' },
+        { key: 'daysCount', label: 'Количество дней' },
+        { key: 'status', label: 'Статус заявления' },
+        { key: 'reason', label: 'Обоснование / Причина' },
+        { key: 'formattedSubmitted', label: 'Дата подачи' },
+        { key: 'reviewerName', label: 'Согласующий руководитель' },
+      ]
+    );
+    toast.success('Экспорт завершен', 'Реестр заявлений на отпуск успешно выгружен в формате Excel/CSV');
+  };
+
   return (
     <div className="space-y-6 text-left">
       {/* Header */}
@@ -168,13 +194,23 @@ export const LeavePage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsRequestModalOpen(true)}
-        >
-          Подать заявление
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            leftIcon={<Download className="w-4 h-4 text-slate-500" />}
+            onClick={handleExport}
+            disabled={requests.length === 0}
+          >
+            Экспорт реестра
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => setIsRequestModalOpen(true)}
+          >
+            Подать заявление
+          </Button>
+        </div>
       </div>
 
       {/* Labor Code of Kazakhstan (ТК РК) Vacation Balance Cards */}
