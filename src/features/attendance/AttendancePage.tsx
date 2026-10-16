@@ -153,7 +153,7 @@ export const AttendancePage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 print:hidden">
           <Button
             variant="outline"
             leftIcon={<Printer className="w-4 h-4 text-slate-500" />}
@@ -173,8 +173,15 @@ export const AttendancePage: React.FC = () => {
         </div>
       </div>
 
+      {/* Official Statutory Form T-13 header for print */}
+      <div className="hidden print:block text-center border-b border-slate-300 pb-3 mb-4">
+        <span className="text-[10px] uppercase font-bold text-slate-500 block">Типовая форма № Т-13</span>
+        <h2 className="text-base font-extrabold uppercase tracking-wide text-black mt-1">Табель учета использования рабочего времени</h2>
+        <p className="text-xs text-slate-600">АО «Jana Post» • Отчетная дата: {formatKazakhstanDate(dateFilter)}</p>
+      </div>
+
       {/* Clock In / Clock Out Personal Widget */}
-      <div className="bg-gradient-to-r from-blue-900 to-[#111827] rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-900 to-[#111827] rounded-3xl p-6 text-white shadow-lg relative overflow-hidden print:hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -269,7 +276,7 @@ export const AttendancePage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 print:hidden">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />

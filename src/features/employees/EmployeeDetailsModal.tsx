@@ -40,6 +40,13 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
       maxWidth="lg"
     >
       <div className="space-y-6">
+        {/* Official Statutory Form T-2 header for print */}
+        <div className="hidden print:block text-center border-b border-slate-300 pb-3 mb-4">
+          <span className="text-[10px] uppercase font-bold text-slate-500 block">Утверждена приказом МЗСР РК</span>
+          <h2 className="text-base font-extrabold uppercase tracking-wide text-black mt-1">Личная карточка работника (Форма Т-2)</h2>
+          <p className="text-xs text-slate-600">АО «Jana Post» • Кадровая служба</p>
+        </div>
+
         {/* Header with avatar & name */}
         <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
@@ -125,7 +132,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100 print:hidden">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
             <Shield className="w-3.5 h-3.5 text-blue-600" />
             <span>Конфиденциальные персональные данные Jana Post HR</span>

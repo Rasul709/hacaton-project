@@ -9,6 +9,32 @@ export class ApiError extends Error {
   }
 }
 
+export const AUTH_UNAUTHORIZED_EVENT = 'jp:auth:unauthorized';
+
+export function dispatchUnauthorized() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
+  }
+}
+
+export function extractErrorMessage(errJson: any, fallback: string): string {
+  if (!errJson) return fallback;
+  if (typeof errJson === 'string') return errJson;
+  if (errJson.message && typeof errJson.message === 'string') return errJson.message;
+  if (errJson.error && typeof errJson.error === 'string') return errJson.error;
+  if (Array.isArray(errJson.errors) && errJson.errors.length > 0) {
+    return errJson.errors
+      .map((e: any) => (typeof e === 'string' ? e : e.message || e.msg || JSON.stringify(e)))
+      .join(', ');
+  }
+  if (Array.isArray(errJson.error) && errJson.error.length > 0) {
+    return errJson.error
+      .map((e: any) => (typeof e === 'string' ? e : e.message || e.msg || JSON.stringify(e)))
+      .join(', ');
+  }
+  return fallback;
+}
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 let authToken: string | null = null;
@@ -61,16 +87,17 @@ export async function apiRequest<T>(
     let errorDetail = '';
     try {
       const errJson = await response.json();
-      errorDetail = errJson.message || errJson.error || JSON.stringify(errJson);
+      errorDetail = extractErrorMessage(errJson, response.statusText || `Ошибка (${response.status})`);
     } catch {
-      errorDetail = response.statusText;
+      errorDetail = response.statusText || `Ошибка (${response.status})`;
     }
 
     if (response.status === 401) {
       setClientToken(null);
+      dispatchUnauthorized();
     }
 
-    throw new ApiError(response.status, errorDetail || `Ошибка запроса (${response.status})`);
+    throw new ApiError(response.status, errorDetail);
   }
 
   if (response.status === 204) {

@@ -45,17 +45,21 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto print:p-0 print:static print:inset-auto print:block"
+    >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-200"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-200 print:hidden"
         onClick={onClose}
       />
 
       {/* Modal Dialog */}
       <div
         className={cn(
-          'relative w-full rounded-2xl bg-white p-6 shadow-xl border border-slate-200 text-left transition-all z-10 max-h-[90vh] flex flex-col',
+          'relative w-full rounded-2xl bg-white p-6 shadow-xl border border-slate-200 text-left transition-all z-10 max-h-[90vh] flex flex-col print:max-h-none print:max-w-full print:shadow-none print:border-none print:p-0 print:m-0',
           maxSizes[maxWidth]
         )}
       >
@@ -66,7 +70,8 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            aria-label="Закрыть"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors print:hidden"
           >
             <X className="w-5 h-5" />
           </button>

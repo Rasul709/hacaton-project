@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Employee } from '@/types';
@@ -7,6 +8,7 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { EmptyState, TableSkeleton } from '@/components/ui/EmptyState';
 import { formatKazakhstanDate } from '@/lib/utils';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 import { EmployeeModal } from './EmployeeModal';
 import { EmployeeDetailsModal } from './EmployeeDetailsModal';
 import {
@@ -28,13 +30,58 @@ import { exportToCsv } from '@/lib/utils/exportCsv';
 
 export const EmployeesPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Filters state
-  const [search, setSearch] = useState('');
-  const [departmentId, setDepartmentId] = useState('ALL');
-  const [status, setStatus] = useState('ALL');
-  const [page, setPage] = useState(1);
+  // Read URL filter params
+  const urlSearch = searchParams.get('q') || '';
+  const departmentId = searchParams.get('dept') || 'ALL';
+  const status = searchParams.get('status') || 'ALL';
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   const limit = 8;
+
+  // Local state for smooth search input
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Sync debounced search to URL params
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (debouncedSearch) {
+          next.set('q', debouncedSearch);
+        } else {
+          next.delete('q');
+        }
+        if (debouncedSearch !== urlSearch) {
+          next.set('page', '1');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  }, [debouncedSearch]);
+
+  const updateParam = (key: string, val: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (val && val !== 'ALL') {
+        next.set(key, val);
+      } else {
+        next.delete(key);
+      }
+      next.set('page', '1');
+      return next;
+    });
+  };
+
+  const setPage = (p: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('page', String(p));
+      return next;
+    });
+  };
 
   // Modals state
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
@@ -48,18 +95,18 @@ export const EmployeesPage: React.FC = () => {
     queryFn: () => api.departments.getAll(),
   });
 
-  // Fetch employees paginated
+  // Fetch employees paginated with debounced search
   const {
     data: employeeResult,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['employees', page, limit, search, departmentId, status],
+    queryKey: ['employees', page, limit, debouncedSearch, departmentId, status],
     queryFn: () =>
       api.employees.getAll({
         page,
         limit,
-        search,
+        search: debouncedSearch,
         departmentId: departmentId === 'ALL' ? undefined : departmentId,
         status: status === 'ALL' ? undefined : status,
       }),
@@ -221,11 +268,8 @@ export const EmployeesPage: React.FC = () => {
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Поиск по ФИО, должности, email или табельному..."
             className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-slate-50/50"
           />
@@ -236,10 +280,7 @@ export const EmployeesPage: React.FC = () => {
           {/* Department Filter */}
           <select
             value={departmentId}
-            onChange={(e) => {
-              setDepartmentId(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => updateParam('dept', e.target.value)}
             className="text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
           >
             <option value="ALL">Все отделы</option>
@@ -253,10 +294,7 @@ export const EmployeesPage: React.FC = () => {
           {/* Status Filter */}
           <select
             value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => updateParam('status', e.target.value)}
             className="text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
           >
             <option value="ALL">Все статусы</option>
@@ -264,15 +302,13 @@ export const EmployeesPage: React.FC = () => {
             <option value="INACTIVE">Неактивные</option>
           </select>
 
-          {(search || departmentId !== 'ALL' || status !== 'ALL') && (
+          {(searchInput || departmentId !== 'ALL' || status !== 'ALL') && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                setSearch('');
-                setDepartmentId('ALL');
-                setStatus('ALL');
-                setPage(1);
+                setSearchInput('');
+                setSearchParams(new URLSearchParams());
               }}
               className="text-xs text-slate-500"
             >
@@ -296,9 +332,8 @@ export const EmployeesPage: React.FC = () => {
           description="По заданным фильтрам или поисковому запросу ничего не найдено."
           actionText="Сбросить фильтры"
           onAction={() => {
-            setSearch('');
-            setDepartmentId('ALL');
-            setStatus('ALL');
+            setSearchInput('');
+            setSearchParams(new URLSearchParams());
           }}
         />
       ) : (
@@ -440,7 +475,7 @@ export const EmployeesPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => setPage(Math.max(1, page - 1))}
                   leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
                 >
                   Назад
@@ -449,7 +484,7 @@ export const EmployeesPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
                   rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
                 >
                   Вперед

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@/types';
 import { api, isDemoModeEnabled } from '@/lib/api';
-import { getClientToken } from '@/lib/api/client';
+import { getClientToken, AUTH_UNAUTHORIZED_EVENT } from '@/lib/api/client';
 
 interface AuthContextType {
   user: User | null;
@@ -37,6 +37,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initAuth();
+
+    const handleUnauthorized = () => {
+      setUser(null);
+    };
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => {
+      window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    };
   }, [isDemo]);
 
   const login = async (email: string, password: string) => {
