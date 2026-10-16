@@ -21,7 +21,10 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
+  Download,
 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { exportToCsv } from '@/lib/utils/exportCsv';
 
 export const EmployeesPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -62,13 +65,19 @@ export const EmployeesPage: React.FC = () => {
       }),
   });
 
+  const toast = useToast();
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: Omit<Employee, 'id' | 'employeeId'>) => api.employees.create(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      toast.success('Сотрудник зачислен в штат', `${data.firstName} ${data.lastName} успешно добавлен в систему`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка добавления', err?.message || 'Не удалось добавить сотрудника');
     },
   });
 
@@ -76,9 +85,13 @@ export const EmployeesPage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Employee> }) =>
       api.employees.update(id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+      toast.success('Профиль обновлен', `Данные ${data.firstName} ${data.lastName} сохранены`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка сохранения', err?.message || 'Не удалось обновить профиль');
     },
   });
 
@@ -86,17 +99,39 @@ export const EmployeesPage: React.FC = () => {
   const statusMutation = useMutation({
     mutationFn: ({ id, newStatus }: { id: string; newStatus: 'ACTIVE' | 'INACTIVE' }) =>
       api.employees.setStatus(id, newStatus),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      toast.info(
+        data.status === 'ACTIVE' ? 'Сотрудник восстановлен' : 'Сотрудник деактивирован',
+        `${data.firstName} ${data.lastName} переведен в статус ${data.status}`
+      );
       setDeactivateEmployee(null);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка изменения статуса', err?.message);
     },
   });
 
   const employees = employeeResult?.data || [];
   const total = employeeResult?.total || 0;
   const totalPages = employeeResult?.totalPages || 1;
+
+  const handleExport = () => {
+    exportToCsv('JanaPost_Shtat_Sotrudnikov', employees, [
+      { key: 'employeeId', label: 'Табельный номер' },
+      { key: 'lastName', label: 'Фамилия' },
+      { key: 'firstName', label: 'Имя' },
+      { key: 'departmentName', label: 'Департамент' },
+      { key: 'jobTitle', label: 'Должность' },
+      { key: 'email', label: 'Корпоративный Email' },
+      { key: 'phone', label: 'Телефон' },
+      { key: 'status', label: 'Статус' },
+      { key: 'startDate', label: 'Дата приема' },
+    ]);
+    toast.success('Экспорт завершен', 'Файл таблицы штата успешно выгружен в формате Excel/CSV');
+  };
 
   const handleSaveEmployee = async (values: any) => {
     const dept = departments.find((d) => d.id === values.departmentId);
@@ -137,16 +172,26 @@ export const EmployeesPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          leftIcon={<UserPlus className="w-4 h-4" />}
-          onClick={() => {
-            setSelectedEmployee(null);
-            setIsAddEditOpen(true);
-          }}
-        >
-          Добавить сотрудника
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            leftIcon={<Download className="w-4 h-4 text-slate-500" />}
+            onClick={handleExport}
+            disabled={employees.length === 0}
+          >
+            Экспорт в CSV
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<UserPlus className="w-4 h-4" />}
+            onClick={() => {
+              setSelectedEmployee(null);
+              setIsAddEditOpen(true);
+            }}
+          >
+            Добавить сотрудника
+          </Button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

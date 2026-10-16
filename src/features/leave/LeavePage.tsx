@@ -19,7 +19,10 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Palmtree,
+  Sparkles,
 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 
 export const LeavePage: React.FC = () => {
   const { user } = useAuth();
@@ -51,13 +54,19 @@ export const LeavePage: React.FC = () => {
       }),
   });
 
+  const toast = useToast();
+
   // Create request mutation
   const createMutation = useMutation({
     mutationFn: (data: any) => api.leave.create(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['leaveRequests'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Заявление подано', `Запрос на ${data.daysCount} дн. отправлен на согласование`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка подачи заявления', err?.message);
     },
   });
 
@@ -65,10 +74,14 @@ export const LeavePage: React.FC = () => {
   const approveMutation = useMutation({
     mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
       api.leave.approve(id, comment),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['leaveRequests'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Заявление одобрено', `Отпуск сотрудника ${data.employeeName} согласован`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка согласования', err?.message);
     },
   });
 
@@ -76,10 +89,14 @@ export const LeavePage: React.FC = () => {
   const rejectMutation = useMutation({
     mutationFn: ({ id, comment }: { id: string; comment: string }) =>
       api.leave.reject(id, comment),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['leaveRequests'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.info('Заявление отклонено', `Запрос сотрудника ${data.employeeName} отклонен`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка отклонения', err?.message);
     },
   });
 
@@ -89,6 +106,10 @@ export const LeavePage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaveRequests'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+      toast.info('Заявление отозвано', 'Ваша заявка на отпуск была отменена');
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка отзыва', err?.message);
     },
   });
 
@@ -135,6 +156,54 @@ export const LeavePage: React.FC = () => {
         >
           Подать заявление
         </Button>
+      </div>
+
+      {/* Labor Code of Kazakhstan (ТК РК) Vacation Balance Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Баланс отпуска (ТК РК ст. 88)
+            </span>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-2xl font-extrabold text-blue-600">17</span>
+              <span className="text-xs text-slate-500">из 24 дней доступно</span>
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+            <Palmtree className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Использовано в 2026 году
+            </span>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-2xl font-extrabold text-slate-800">7</span>
+              <span className="text-xs text-slate-500">дней трудового отпуска</span>
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Заявки на рассмотрении
+            </span>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-2xl font-extrabold text-amber-600">{pendingCount}</span>
+              <span className="text-xs text-slate-500">требуют резолюции</span>
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+            <Clock className="w-5 h-5" />
+          </div>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

@@ -21,7 +21,10 @@ import {
   AlertTriangle,
   Timer,
   Sparkles,
+  Download,
 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { exportToCsv } from '@/lib/utils/exportCsv';
 
 export const AttendancePage: React.FC = () => {
   const { user } = useAuth();
@@ -66,25 +69,38 @@ export const AttendancePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [isClockedIn, userTodayRecord]);
 
+  const toast = useToast();
+
   // Clock In mutation
   const clockInMutation = useMutation({
     mutationFn: (notes?: string) => api.attendance.clockIn(notes),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       setClockActionMsg('Начало рабочего дня успешно зафиксировано!');
+      toast.success('Смена начата', `Время прихода зафиксировано в ${formatKazakhstanTime(data.clockIn)}`);
       setTimeout(() => setClockActionMsg(null), 4000);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка фиксации прихода', err?.message);
     },
   });
 
   // Clock Out mutation
   const clockOutMutation = useMutation({
     mutationFn: () => api.attendance.clockOut(),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       setClockActionMsg('Окончание рабочего дня зафиксировано!');
+      toast.success(
+        'Смена завершена',
+        `Окончание смены: ${formatKazakhstanTime(data.clockOut)}. Отработано: ${formatDuration(data.durationMinutes)}`
+      );
       setTimeout(() => setClockActionMsg(null), 4000);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка завершения смены', err?.message);
     },
   });
 
@@ -94,6 +110,29 @@ export const AttendancePage: React.FC = () => {
 
   const handleClockOut = async () => {
     await clockOutMutation.mutateAsync();
+  };
+
+  const handleExportAttendance = () => {
+    exportToCsv(
+      `JanaPost_Tabel_Ucheta_Vremeni_${dateFilter}`,
+      records.map((r) => ({
+        ...r,
+        clockInTime: formatKazakhstanTime(r.clockIn),
+        clockOutTime: formatKazakhstanTime(r.clockOut),
+        durationFormatted: formatDuration(r.durationMinutes),
+      })),
+      [
+        { key: 'employeeName', label: 'Сотрудник' },
+        { key: 'departmentName', label: 'Департамент' },
+        { key: 'workDate', label: 'Дата' },
+        { key: 'clockInTime', label: 'Время прихода' },
+        { key: 'clockOutTime', label: 'Время ухода' },
+        { key: 'durationFormatted', label: 'Отработано' },
+        { key: 'status', label: 'Статус посещаемости' },
+        { key: 'notes', label: 'Примечания' },
+      ]
+    );
+    toast.success('Экспорт завершен', 'Табель учета рабочего времени (форма Т-13) успешно выгружен');
   };
 
   const filteredRecords = records.filter(
@@ -112,6 +151,15 @@ export const AttendancePage: React.FC = () => {
             Электронный табель учета посещаемости Jana Post • Единый часовой пояс UTC+5
           </p>
         </div>
+
+        <Button
+          variant="outline"
+          leftIcon={<Download className="w-4 h-4 text-slate-500" />}
+          onClick={handleExportAttendance}
+          disabled={records.length === 0}
+        >
+          Экспорт табеля (Т-13)
+        </Button>
       </div>
 
       {/* Clock In / Clock Out Personal Widget */}

@@ -21,9 +21,11 @@ import {
   Clock,
   Edit2,
 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 
 export const TasksPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [search, setSearch] = useState('');
@@ -54,10 +56,14 @@ export const TasksPage: React.FC = () => {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: any) => api.tasks.create(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Задача создана', `«${data.title}» назначена на ${data.assignedToName}`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка создания задачи', err?.message);
     },
   });
 
@@ -65,9 +71,13 @@ export const TasksPage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<TaskItem> }) =>
       api.tasks.update(id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+      toast.success('Задача обновлена', `Параметры «${data.title}» изменены`);
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка обновления задачи', err?.message);
     },
   });
 
@@ -75,9 +85,18 @@ export const TasksPage: React.FC = () => {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
       api.tasks.updateStatus(id, status),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+      toast.info(
+        'Статус задачи обновлен',
+        data.status === 'DONE'
+          ? `Задача «${data.title}» успешно завершена!`
+          : `Задача переведена в «${data.status === 'IN_PROGRESS' ? 'В работе' : 'К выполнению'}»`
+      );
+    },
+    onError: (err: any) => {
+      toast.error('Ошибка изменения статуса', err?.message);
     },
   });
 

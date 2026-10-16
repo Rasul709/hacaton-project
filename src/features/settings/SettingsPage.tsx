@@ -19,6 +19,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/Toast';
 
 const passwordSchema = z
   .object({
@@ -36,6 +37,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export const SettingsPage: React.FC = () => {
   const { user, changePassword, logout } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const isDemo = isDemoModeEnabled();
 
   const [passwordSuccess, setPasswordSuccess] = useState(false);
@@ -58,11 +60,13 @@ export const SettingsPage: React.FC = () => {
     try {
       await changePassword(values.oldPassword, values.newPassword);
       setPasswordSuccess(true);
+      toast.success('Пароль обновлен', 'Новый пароль успешно сохранен в системе');
       reset();
       setTimeout(() => setPasswordSuccess(false), 5000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Не удалось изменить пароль';
       setPasswordError(msg);
+      toast.error('Ошибка смены пароля', msg);
     }
   };
 
@@ -75,19 +79,23 @@ export const SettingsPage: React.FC = () => {
       if (res.ok) {
         setPingStatus('online');
         setPingMessage(`Сервер успешно отвечает (${res.status} OK)`);
+        toast.success('Сервер онлайн', `Сервер бэкенда доступен (${res.status} OK)`);
       } else {
         setPingStatus('offline');
         setPingMessage(`Сервер вернул статус ${res.status}`);
+        toast.error('Сервер вернул ошибку', `HTTP Status: ${res.status}`);
       }
     } catch (err: unknown) {
       setPingStatus('offline');
       setPingMessage('Сервер недоступен по адресу: ' + apiUrl);
+      toast.error('Сервер недоступен', 'Проверьте запуск сервера на порту 3000');
     }
   };
 
   const handleResetData = () => {
     api.demo.resetData();
-    window.location.reload();
+    toast.info('Данные сброшены', 'Восстановлены заводские демо-данные');
+    setTimeout(() => window.location.reload(), 500);
   };
 
   const handleLogout = async () => {
