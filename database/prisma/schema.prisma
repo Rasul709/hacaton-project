@@ -1,0 +1,220 @@
+// Prisma Schema for Digital HR by Jana Post
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  admin
+  manager
+  employee
+}
+
+enum EmployeeStatus {
+  active
+  on_leave
+  probation
+  terminated
+}
+
+enum AttendanceStatus {
+  present
+  late
+  absent
+  remote
+  half_day
+}
+
+enum LeaveType {
+  annual
+  sick
+  unpaid
+  maternity
+  study
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  review
+  completed
+}
+
+enum NotificationType {
+  leave
+  task
+  attendance
+  system
+  announcement
+}
+
+model Department {
+  id                   String     @id @default(uuid())
+  name                 String
+  code                 String     @unique
+  description          String?
+  managerId            String?
+  managerName          String?
+  budget               Decimal    @default(0.00) @db.Decimal(15, 2)
+  employees            Employee[]
+  tasks                Task[]
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@map("departments")
+}
+
+model Employee {
+  id                   String             @id @default(uuid())
+  firstName            String             @map("first_name")
+  lastName             String             @map("last_name")
+  email                String             @unique
+  phone                String?
+  avatarUrl            String?            @map("avatar_url")
+  role                 Role               @default(employee)
+  status               EmployeeStatus     @default(active)
+  departmentId         String?            @map("department_id")
+  department           Department?        @relation(fields: [departmentId], references: [id])
+  position             String
+  hireDate             DateTime           @map("hire_date")
+  salary               Decimal            @default(0.00) @db.Decimal(12, 2)
+  iin                  String?            @db.VarChar(12)
+  location             String?            @default("Алматы, Казахстан")
+  vacationDaysTotal    Int                @default(24) @map("vacation_days_total")
+  vacationDaysUsed     Int                @default(0) @map("vacation_days_used")
+  attendanceRecords    AttendanceRecord[]
+  leaveRequests        LeaveRequest[]     @relation("EmployeeLeaveRequests")
+  reviewedLeaves       LeaveRequest[]     @relation("ReviewerLeaveRequests")
+  assignedTasks        Task[]             @relation("TaskAssignee")
+  createdTasks         Task[]             @relation("TaskCreator")
+  notifications        Notification[]
+  courseProgress       EmployeeCourseProgress[]
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  @@map("employees")
+}
+
+model AttendanceRecord {
+  id             String           @id @default(uuid())
+  employeeId     String           @map("employee_id")
+  employee       Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date           DateTime         @db.Date
+  clockIn        DateTime?        @map("clock_in")
+  clockOut       DateTime?        @map("clock_out")
+  status         AttendanceStatus @default(present)
+  workHours      Decimal          @default(0.00) @map("work_hours") @db.Decimal(4, 2)
+  overtimeHours  Decimal          @default(0.00) @map("overtime_hours") @db.Decimal(4, 2)
+  notes          String?
+  locationIn     String?          @map("location_in")
+  locationOut    String?          @map("location_out")
+  ipAddress      String?          @map("ip_address")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  @@unique([employeeId, date])
+  @@map("attendance_records")
+}
+
+model LeaveRequest {
+  id              String       @id @default(uuid())
+  employeeId      String       @map("employee_id")
+  employee        Employee     @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
+  type            LeaveType    @default(annual)
+  startDate       DateTime     @map("start_date") @db.Date
+  endDate         DateTime     @map("end_date") @db.Date
+  daysCount       Int          @map("days_count")
+  reason          String
+  status          LeaveStatus  @default(pending)
+  reviewedById    String?      @map("reviewed_by")
+  reviewedBy      Employee?    @relation("ReviewerLeaveRequests", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?    @map("reviewed_at")
+  rejectionReason String?      @map("rejection_reason")
+  attachmentUrl   String?      @map("attachment_url")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@map("leave_requests")
+}
+
+model Task {
+  id           String        @id @default(uuid())
+  title        String
+  description  String?
+  status       TaskStatus    @default(todo)
+  priority     TaskPriority  @default(medium)
+  assigneeId   String?       @map("assignee_id")
+  assignee     Employee?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creatorId    String?       @map("creator_id")
+  creator      Employee?     @relation("TaskCreator", fields: [creatorId], references: [id])
+  departmentId String?       @map("department_id")
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  dueDate      DateTime?     @map("due_date") @db.Date
+  tags         String[]
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@map("tasks")
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String           @map("user_id")
+  user       Employee         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  message    String
+  type       NotificationType @default(system)
+  isRead     Boolean          @default(false) @map("is_read")
+  actionUrl  String?          @map("action_url")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+model Course {
+  id              String                   @id @default(uuid())
+  title           String
+  description     String
+  category        String
+  durationMinutes Int                      @default(45) @map("duration_minutes")
+  points          Int                      @default(100)
+  coverImage      String?                  @map("cover_image")
+  progress        EmployeeCourseProgress[]
+  createdAt       DateTime                 @default(now()) @map("created_at")
+
+  @@map("courses")
+}
+
+model EmployeeCourseProgress {
+  id              String    @id @default(uuid())
+  employeeId      String    @map("employee_id")
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  courseId        String    @map("course_id")
+  course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progressPercent Int       @default(0) @map("progress_percent")
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  score           Int       @default(0)
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@unique([employeeId, courseId])
+  @@map("employee_course_progress")
+}
