@@ -593,7 +593,7 @@ export function renderEmploymentContract(employee) {
 }
 
 export function render1cXml(attendance = [], employees = []) {
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const itemsXml = employees
     .map((emp) => {
       const gross = emp.salary || 350000;

@@ -134,8 +134,8 @@ export const LeavePage: React.FC = () => {
 
   const filteredRequests = requests.filter((r) => {
     const matchesSearch =
-      r.employeeName.toLowerCase().includes(search.toLowerCase()) ||
-      r.reason.toLowerCase().includes(search.toLowerCase());
+      (r.employeeName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.reason || '').toLowerCase().includes(search.toLowerCase());
     const matchesType = typeFilter === 'ALL' || r.leaveType === typeFilter;
     return matchesSearch && matchesType;
   });

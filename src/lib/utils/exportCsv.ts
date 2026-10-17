@@ -1,3 +1,5 @@
+import { getKazakhstanDateString } from './index';
+
 /**
  * Helper to export array of objects to a CSV file with UTF-8 BOM
  * (ensuring proper rendering in Russian Excel)
@@ -22,7 +24,7 @@ export function exportToCsv(filename: string, rows: Record<string, any>[], heade
 
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `${filename}_${getKazakhstanDateString()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

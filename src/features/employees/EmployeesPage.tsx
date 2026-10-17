@@ -496,7 +496,10 @@ export const EmployeesPage: React.FC = () => {
       {/* Add / Edit Modal */}
       <EmployeeModal
         isOpen={isAddEditOpen}
-        onClose={() => setIsAddEditOpen(false)}
+        onClose={() => {
+          setIsAddEditOpen(false);
+          setSelectedEmployee(null);
+        }}
         onSubmit={handleSaveEmployee}
         employee={selectedEmployee}
         departments={departments}
@@ -505,6 +508,7 @@ export const EmployeesPage: React.FC = () => {
 
       {/* View Profile Drawer/Modal */}
       <EmployeeDetailsModal
+        key={viewEmployee?.id}
         isOpen={!!viewEmployee}
         onClose={() => setViewEmployee(null)}
         employee={viewEmployee}

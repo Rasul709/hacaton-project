@@ -8,6 +8,21 @@ export function cn(...inputs: ClassValue[]) {
 // Kazakhstan Timezone helper (Asia/Almaty / UTC+5)
 export const KAZAKHSTAN_TIMEZONE = 'Asia/Almaty';
 
+/**
+ * Returns YYYY-MM-DD date string formatted strictly in Asia/Almaty (UTC+5) timezone.
+ * Prevents UTC midnight date-shifting bugs.
+ */
+export function getKazakhstanDateString(dateInput?: Date | string): string {
+  const d = !dateInput ? new Date() : typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const targetDate = isNaN(d.getTime()) ? new Date() : d;
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: KAZAKHSTAN_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(targetDate);
+}
+
 export function formatKazakhstanDate(dateInput: string | Date | undefined, includeTime: boolean = false): string {
   if (!dateInput) return '—';
   const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;

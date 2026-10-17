@@ -41,6 +41,7 @@ import { Paperclip, FileText, X, Sparkles, Calculator, Info } from 'lucide-react
 import { api } from '@/lib/api';
 import { calculateVacationDaysWithHolidays } from '@/lib/utils/kzCalendar';
 import { calculateKazakhstanVacationPay } from '@/lib/utils/kzPayroll';
+import { getKazakhstanDateString } from '@/lib/utils';
 
 interface LeaveRequestModalProps {
   isOpen: boolean;
@@ -65,8 +66,8 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     resolver: zodResolver(leaveRequestSchema),
     defaultValues: {
       leaveType: 'ANNUAL',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      startDate: getKazakhstanDateString(),
+      endDate: getKazakhstanDateString(new Date(Date.now() + 7 * 86400000)),
       reason: '',
       amount: 150000,
     },

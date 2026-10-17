@@ -316,6 +316,7 @@ export function queryHrAssistant(userQuery: string): ChatMessage {
   }
 
   const timestamp = new Date().toLocaleTimeString('ru-RU', {
+    timeZone: 'Asia/Almaty',
     hour: '2-digit',
     minute: '2-digit',
   });

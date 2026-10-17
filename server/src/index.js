@@ -514,6 +514,15 @@ app.get('/api/v1/attendance', (req, res) => {
   res.json(records);
 });
 
+function getAlmatyDateString(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Almaty',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
 app.post('/api/v1/attendance/clock-in', (req, res) => {
   const currentUser = getUserFromAuth(req);
   const employeeId = req.body.employeeId || currentUser.id;
@@ -521,7 +530,7 @@ app.post('/api/v1/attendance/clock-in', (req, res) => {
   const notes = req.body.notes || '';
 
   const now = new Date();
-  const workDate = now.toISOString().split('T')[0];
+  const workDate = getAlmatyDateString(now);
 
   const existing = db.attendance.find((r) => r.employeeId === employeeId && r.workDate === workDate);
   if (existing) {
@@ -553,9 +562,11 @@ app.post('/api/v1/attendance/clock-in', (req, res) => {
 app.post('/api/v1/attendance/clock-out', (req, res) => {
   const currentUser = getUserFromAuth(req);
   const employeeId = req.body.employeeId || currentUser.id;
-  const workDate = new Date().toISOString().split('T')[0];
+  const workDate = getAlmatyDateString();
 
-  const record = db.attendance.find((r) => r.employeeId === employeeId && r.workDate === workDate);
+  const record =
+    db.attendance.find((r) => r.employeeId === employeeId && !r.clockOut) ||
+    db.attendance.find((r) => r.employeeId === employeeId && r.workDate === workDate);
   if (!record) return res.status(404).json({ error: 'Активная смена не найдена на сегодня' });
 
   const now = new Date();

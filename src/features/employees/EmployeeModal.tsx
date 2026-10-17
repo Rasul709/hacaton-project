@@ -6,6 +6,7 @@ import { Employee, Department } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { Input, Select } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { getKazakhstanDateString } from '@/lib/utils';
 
 const employeeSchema = z.object({
   firstName: z.string().min(2, 'Введите имя сотрудника'),
@@ -56,7 +57,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       jobTitle: '',
       departmentId: departments[0]?.id || '',
       status: 'ACTIVE',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: getKazakhstanDateString(),
       address: '',
       emergencyContact: '',
     },
@@ -85,7 +86,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         jobTitle: '',
         departmentId: departments[0]?.id || '',
         status: 'ACTIVE',
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: getKazakhstanDateString(),
         address: '',
         emergencyContact: '',
       });

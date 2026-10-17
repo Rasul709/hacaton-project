@@ -20,6 +20,7 @@ import {
   INITIAL_NOTIFICATIONS,
   INITIAL_DASHBOARD,
 } from './mockData';
+import { getKazakhstanDateString } from '@/lib/utils';
 
 const delay = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -234,7 +235,7 @@ class MockService {
   async clockIn(notes?: string): Promise<AttendanceRecord> {
     await delay(250);
     const now = new Date();
-    const workDate = now.toISOString().split('T')[0];
+    const workDate = getKazakhstanDateString(now);
 
     const existingIdx = this.attendance.findIndex(
       (a) => a.employeeId === this.currentUser.id && a.workDate === workDate
@@ -244,6 +245,10 @@ class MockService {
       return this.attendance[existingIdx];
     }
 
+    const almatyHour = parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Almaty', hour: '2-digit', hour12: false }).format(now), 10);
+    const almatyMin = parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Almaty', minute: '2-digit' }).format(now), 10);
+    const isLate = almatyHour > 9 || (almatyHour === 9 && almatyMin > 15);
+
     const newRecord: AttendanceRecord = {
       id: `att-${Date.now()}`,
       employeeId: this.currentUser.id,
@@ -251,7 +256,7 @@ class MockService {
       departmentName: this.currentUser.departmentName,
       workDate,
       clockIn: now.toISOString(),
-      status: now.getHours() > 9 ? 'LATE' : 'PRESENT',
+      status: isLate ? 'LATE' : 'PRESENT',
       notes,
     };
 
@@ -263,18 +268,24 @@ class MockService {
   async clockOut(): Promise<AttendanceRecord> {
     await delay(250);
     const now = new Date();
-    const workDate = now.toISOString().split('T')[0];
+    const workDate = getKazakhstanDateString(now);
 
-    const idx = this.attendance.findIndex(
-      (a) => a.employeeId === this.currentUser.id && a.workDate === workDate
+    let idx = this.attendance.findIndex(
+      (a) => a.employeeId === this.currentUser.id && !a.clockOut
     );
+
+    if (idx === -1) {
+      idx = this.attendance.findIndex(
+        (a) => a.employeeId === this.currentUser.id && a.workDate === workDate
+      );
+    }
 
     if (idx === -1) {
       throw new Error('Сначала необходимо зафиксировать приход (Clock In)');
     }
 
     const clockInDate = new Date(this.attendance[idx].clockIn || now.toISOString());
-    const durationMinutes = Math.round((now.getTime() - clockInDate.getTime()) / 60000);
+    const durationMinutes = Math.max(1, Math.round((now.getTime() - clockInDate.getTime()) / 60000));
 
     this.attendance[idx] = {
       ...this.attendance[idx],

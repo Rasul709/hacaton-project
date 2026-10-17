@@ -75,7 +75,7 @@ export const DashboardPage: React.FC = () => {
       { metric: 'Заявок на отпуск на рассмотрении', value: String(dashboard.pendingLeavesCount), note: 'Требуют визы руководителя' },
       { metric: 'Явка сегодня', value: String(dashboard.attendanceTodayCount), note: `На дату ${formatKazakhstanDate(new Date())}` },
       { metric: 'Задач в процессе выполнения', value: String(dashboard.tasksInProgressCount), note: 'Активные внутренние поручения' },
-      ...dashboard.employeesByDepartment.map((d) => ({
+      ...(dashboard.employeesByDepartment || []).map((d) => ({
         metric: `Департамент: ${d.department}`,
         value: String(d.count),
         note: 'Численность отдела',

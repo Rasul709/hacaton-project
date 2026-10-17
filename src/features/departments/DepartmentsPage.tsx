@@ -47,6 +47,8 @@ export const DepartmentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       toast.success('Департамент создан', `Отдел «${data.name}» успешно добавлен`);
+      setIsModalOpen(false);
+      setSelectedDept(null);
     },
     onError: (err: any) => {
       toast.error('Ошибка создания', err?.message);
@@ -60,6 +62,8 @@ export const DepartmentsPage: React.FC = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       toast.success('Департамент обновлен', `Данные «${data.name}» сохранены`);
+      setIsModalOpen(false);
+      setSelectedDept(null);
     },
     onError: (err: any) => {
       toast.error('Ошибка сохранения', err?.message);
@@ -82,9 +86,9 @@ export const DepartmentsPage: React.FC = () => {
 
   const filtered = departments.filter(
     (d) =>
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.code.toLowerCase().includes(search.toLowerCase()) ||
-      d.description.toLowerCase().includes(search.toLowerCase())
+      (d.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (d.code || '').toLowerCase().includes(search.toLowerCase()) ||
+      (d.description || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const handleExport = () => {

@@ -28,11 +28,15 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
       api.employees.getAll({ limit: 50 }),
       api.departments.getAll(),
       api.tasks.getAll(),
-    ]).then(([empRes, deptRes, taskRes]) => {
-      setEmployees(empRes.data);
-      setDepartments(deptRes);
-      setTasks(taskRes);
-    });
+    ])
+      .then(([empRes, deptRes, taskRes]) => {
+        setEmployees(empRes?.data || []);
+        setDepartments(deptRes || []);
+        setTasks(taskRes || []);
+      })
+      .catch((err) => {
+        console.error('Failed to pre-fetch search items:', err);
+      });
   }, [isOpen]);
 
   // Handle Ctrl+K
@@ -54,27 +58,27 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
   const filteredEmployees = q
     ? employees.filter(
         (e) =>
-          e.firstName.toLowerCase().includes(q) ||
-          e.lastName.toLowerCase().includes(q) ||
-          e.jobTitle.toLowerCase().includes(q) ||
-          e.email.toLowerCase().includes(q) ||
-          e.employeeId.toLowerCase().includes(q)
+          (e.firstName || '').toLowerCase().includes(q) ||
+          (e.lastName || '').toLowerCase().includes(q) ||
+          (e.jobTitle || '').toLowerCase().includes(q) ||
+          (e.email || '').toLowerCase().includes(q) ||
+          (e.employeeId || '').toLowerCase().includes(q)
       ).slice(0, 4)
     : [];
 
   const filteredDepartments = q
     ? departments.filter(
         (d) =>
-          d.name.toLowerCase().includes(q) ||
-          d.code.toLowerCase().includes(q)
+          (d.name || '').toLowerCase().includes(q) ||
+          (d.code || '').toLowerCase().includes(q)
       ).slice(0, 3)
     : [];
 
   const filteredTasks = q
     ? tasks.filter(
         (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q)
+          (t.title || '').toLowerCase().includes(q) ||
+          (t.description || '').toLowerCase().includes(q)
       ).slice(0, 3)
     : [];
 

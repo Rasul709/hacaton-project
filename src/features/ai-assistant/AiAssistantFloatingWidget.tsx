@@ -20,7 +20,7 @@ export const AiAssistantFloatingWidget: React.FC = () => {
       sender: 'assistant',
       text:
         'Здравствуйте! Я AI HR-ассистент Jana Post. Подскажу по отпускам (ст. 88 ТК РК), авансам, справкам Т-2 и обучению в Jana Academy.',
-      timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit' }),
       sources: [
         {
           title: 'База знаний HR Jana Post',
@@ -50,7 +50,7 @@ export const AiAssistantFloatingWidget: React.FC = () => {
       id: `usr-${Date.now()}`,
       sender: 'user',
       text: query,
-      timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, userMsg]);

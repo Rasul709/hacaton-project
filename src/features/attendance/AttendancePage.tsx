@@ -9,6 +9,7 @@ import {
   formatKazakhstanDate,
   formatKazakhstanTime,
   formatDuration,
+  getKazakhstanDateString,
 } from '@/lib/utils';
 import {
   Clock,
@@ -33,7 +34,7 @@ export const AttendancePage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const [dateFilter, setDateFilter] = useState<string>(() =>
-    new Date().toISOString().split('T')[0]
+    getKazakhstanDateString()
   );
   const [search, setSearch] = useState('');
   const [currentTimer, setCurrentTimer] = useState<string>('00:00:00');
@@ -54,7 +55,7 @@ export const AttendancePage: React.FC = () => {
   });
 
   // Find today's record for current logged in user
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => getKazakhstanDateString(), []);
   const userTodayRecord = records.find(
     (r) => r.employeeId === user?.id && r.workDate === todayStr
   );
@@ -173,7 +174,7 @@ export const AttendancePage: React.FC = () => {
 
   const filteredRecords = records.filter(
     (r) =>
-      r.employeeName.toLowerCase().includes(search.toLowerCase()) ||
+      (r.employeeName || '').toLowerCase().includes(search.toLowerCase()) ||
       (r.departmentName && r.departmentName.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -388,7 +389,7 @@ export const AttendancePage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+            onClick={() => setDateFilter(getKazakhstanDateString())}
             className="text-xs"
           >
             Сегодня

@@ -21,7 +21,7 @@ export const AiAssistantPage: React.FC = () => {
       sender: 'assistant',
       text:
         'Здравствуйте! Я официальный **AI HR-ассистент АО «Jana Post»**.\n\nЯ обучен по внутренней базе знаний компании, Трудовому кодексу Республики Казахстан (ТК РК ст. 88, ст. 113 и др.) и кадровым регламентам. Готов ответить на любые вопросы по отпускам, выплате авансов, получению справок и обучению в Jana Academy.\n\nКаждый мой ответ подтверждается ссылкой на официальный нормативный документ.',
-      timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit' }),
       sources: [
         {
           title: 'Корпоративная база знаний HR Jana Post',
@@ -53,7 +53,7 @@ export const AiAssistantPage: React.FC = () => {
       id: `usr-${Date.now()}`,
       sender: 'user',
       text: query,
-      timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, userMsg]);

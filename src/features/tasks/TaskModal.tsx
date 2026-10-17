@@ -6,6 +6,7 @@ import { TaskItem, Employee } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { Input, Textarea, Select } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { getKazakhstanDateString } from '@/lib/utils';
 
 const taskSchema = z.object({
   title: z.string().min(3, 'Введите название задачи'),
@@ -50,7 +51,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       priority: 'MEDIUM',
       status: 'TODO',
       assignedToId: employees[0]?.id || '',
-      dueDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+      dueDate: getKazakhstanDateString(new Date(Date.now() + 3 * 86400000)),
     },
   });
 
@@ -71,7 +72,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         priority: 'MEDIUM',
         status: 'TODO',
         assignedToId: employees[0]?.id || '',
-        dueDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+        dueDate: getKazakhstanDateString(new Date(Date.now() + 3 * 86400000)),
       });
     }
   }, [task, employees, reset, isOpen]);

@@ -5,7 +5,7 @@ import { TaskItem, TaskStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { TaskPriorityBadge, TaskStatusBadge } from '@/components/ui/Badge';
 import { EmptyState, TableSkeleton } from '@/components/ui/EmptyState';
-import { formatKazakhstanDate } from '@/lib/utils';
+import { formatKazakhstanDate, getKazakhstanDateString } from '@/lib/utils';
 import { TaskModal } from './TaskModal';
 import {
   CheckSquare,
@@ -109,13 +109,13 @@ export const TasksPage: React.FC = () => {
 
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch =
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
-      t.description.toLowerCase().includes(search.toLowerCase()) ||
-      t.assignedToName.toLowerCase().includes(search.toLowerCase());
+      (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.description || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.assignedToName || '').toLowerCase().includes(search.toLowerCase());
     return matchesSearch;
   });
 
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const today = useMemo(() => getKazakhstanDateString(), []);
 
   const kanbanColumns: { status: TaskStatus; label: string; bg: string; border: string }[] = [
     { status: 'TODO', label: 'К выполнению', bg: 'bg-slate-50', border: 'border-slate-200' },
