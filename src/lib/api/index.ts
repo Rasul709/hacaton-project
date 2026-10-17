@@ -28,7 +28,7 @@ export function isDemoModeEnabled(): boolean {
   if (envVal !== undefined) {
     return envVal === 'true';
   }
-  return true; // Default to demo mode for standalone hackathon run
+  return false; // Default to Live API mode
 }
 
 export function setDemoModeEnabled(enabled: boolean): void {

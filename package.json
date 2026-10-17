@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "server": "node server/src/index.js",
+    "dev:all": "node scripts/dev-all.js",
     "preview": "vite preview"
   },
   "dependencies": {
