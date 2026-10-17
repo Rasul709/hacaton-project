@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jana Post Digital HR — Core 30% MVP</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-between antialiased">
+
+  <!-- TOP HEADER & ROLE SWITCHER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-blue-500/20">
+          JP
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-base tracking-tight text-slate-900">JANA POST</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              Core 30% MVP
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 hidden sm:block">Базовый кадровый контур сотрудника</p>
+        </div>
+      </div>
+
+      <!-- Quick Role Toggle (Worker <-> Manager) -->
+      <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+        <span class="text-slate-400 pl-2 pr-1 hidden sm:inline">Режим:</span>
+        <button id="btnRoleWorker" onclick="switchRole('worker')" class="px-3 py-1.5 rounded-lg bg-white text-blue-700 shadow-xs border border-slate-200 transition-all font-bold">
+          👤 Работник (Адиль)
+        </button>
+        <button id="btnRoleManager" onclick="switchRole('manager')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+          👔 Руководитель (Нурлан)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-6">
+
+    <!-- ============================================== -->
+    <!-- VIEW 1: WORKER ESS DASHBOARD (30% CORE)        -->
+    <!-- ============================================== -->
+    <div id="workerDashboard" class="space-y-6">
+
+      <!-- HERO PROFILE CARD -->
+      <div class="bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div class="flex items-center gap-4 sm:gap-5">
+            <div class="relative">
+              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 ring-4 ring-white/20 flex items-center justify-center font-bold text-2xl text-white">
+                АО
+              </div>
+              <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-400 ring-2 ring-white" title="Онлайн"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-200">
+                <span>Личный кабинет сотрудника</span>
+                <span>•</span>
+                <span>Табельный № JP-00106</span>
+              </div>
+              <h1 class="text-2xl sm:text-3xl font-extrabold mt-1">Адиль Омаров</h1>
+              <p class="text-xs sm:text-sm text-blue-100 mt-1">
+                IT и разработка • Senior Frontend Developer • В штате с 15 марта 2023 г.
+              </p>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="openLeaveModal()" class="px-4 py-2.5 rounded-xl bg-white text-blue-900 hover:bg-blue-50 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 active:scale-95">
+              <span>🏖️ Заявление на отпуск</span>
+            </button>
+            <button onclick="openAdvanceModal()" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs transition-all flex items-center gap-1.5 active:scale-95">
+              <span>💳 Запросить аванс (₸)</span>
+            </button>
+            <button id="btnClockIn" onclick="toggleClockIn()" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 shadow-md active:scale-95">
+              <span id="clockInIcon">🟢</span>
+              <span id="clockInText">Отметиться (Приход)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 CORE METRIC TILES: LEAVE BALANCE & SUPERVISOR -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- 1. VACATION BALANCE ACCORDING TO TK RK ART. 88 -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                ТК РК статья 88
+              </span>
+              <span class="text-xs text-slate-400">Гарантированная квота: 24 дня</span>
+            </div>
+
+            <h3 class="text-base font-bold text-slate-900 mt-3">Баланс ежегодного оплачиваемого отпуска</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Автоматический учет доступных и использованных дней</p>
+
+            <div class="mt-4 flex items-baseline gap-2">
+              <span id="availableDays" class="text-3xl font-black text-slate-900">17</span>
+              <span class="text-sm font-semibold text-slate-500">из 24 дней доступно</span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-100 rounded-full h-2.5 mt-3 overflow-hidden">
+              <div id="vacationProgress" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 70.8%;"></div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="text-slate-400 block">Использовано</span>
+                <span id="usedDays" class="font-bold text-slate-800 text-sm">7 дней</span>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="text-slate-400 block">На рассмотрении</span>
+                <span id="pendingDays" class="font-bold text-blue-600 text-sm">0 дней</span>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="openLeaveModal()" class="mt-5 w-full py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-colors">
+            Подать заявку на отпуск →
+          </button>
+        </div>
+
+        <!-- 2. IMMEDIATE SUPERVISOR WIDGET -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-100">
+                Руководитель
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> В сети (онлайн)
+              </span>
+            </div>
+
+            <h3 class="text-base font-bold text-slate-900 mt-3">Мой непосредственный руководитель</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Согласует ваши заявления и графики смен</p>
+
+            <div class="mt-4 flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 font-bold flex items-center justify-center text-base">
+                НС
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-slate-900">Нурлан Сериков</h4>
+                <p class="text-xs text-slate-500">IT Director / Начальник управления</p>
+                <span class="text-[11px] text-purple-700 font-medium">Отдел: IT и разработка</span>
+              </div>
+            </div>
+
+            <div class="mt-4 space-y-2 text-xs">
+              <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <span class="text-slate-500">Эл. почта:</span>
+                <span class="font-mono font-medium text-slate-800">nurlan.serikov@janapost.kz</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <span class="text-slate-500">Телефон:</span>
+                <span class="font-mono font-medium text-slate-800">+7 (705) 123-4567</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 text-center text-[11px] text-slate-400">
+            Заявки визируются руководителем в течение 2 часов (SLA)
+          </div>
+        </div>
+      </div>
+
+      <!-- MY REQUESTS REGISTRY TABLE -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Мои кадровые заявки</h3>
+            <p class="text-xs text-slate-500">История поданных заявлений и текущие статусы визирования</p>
+          </div>
+          <button onclick="openLeaveModal()" class="text-xs font-bold text-blue-600 hover:text-blue-800">
+            + Новая заявка
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Тип заявки</th>
+                <th class="py-3 px-4">Детали / Период</th>
+                <th class="py-3 px-4">Дней / Сумма</th>
+                <th class="py-3 px-4">Статус</th>
+                <th class="py-3 px-4">Дата подачи</th>
+              </tr>
+            </thead>
+            <tbody id="workerRequestsTable" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- VIEW 2: MANAGER APPROVAL VIEW (30% CORE)       -->
+    <!-- ============================================== -->
+    <div id="managerDashboard" class="space-y-6 hidden">
+
+      <!-- MANAGER BANNER -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
+            Кабинет руководителя
+          </span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2">Нурлан Сериков 👋</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Управление подразделением «IT и разработка» • 24 сотрудника</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-right">
+          <span class="text-slate-400 block">Заявок на рассмотрении:</span>
+          <span id="managerPendingBadge" class="text-lg font-black text-amber-600">1 заявка</span>
+        </div>
+      </div>
+
+      <!-- APPROVAL QUEUE TABLE -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Очередь визирования кадровых заявок</h3>
+          <p class="text-xs text-slate-500">Рассмотрите заявления сотрудников вашего отдела и наложите цифровую резолюцию</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Сотрудник</th>
+                <th class="py-3 px-4">Тип заявления</th>
+                <th class="py-3 px-4">Период / Запрос</th>
+                <th class="py-3 px-4">Статус</th>
+                <th class="py-3 px-4 text-right">Резолюция</th>
+              </tr>
+            </thead>
+            <tbody id="managerRequestsTable" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    Jana Post Digital HR • Базовый кадровый контур 30% • ТК РК ст. 88, ст. 113 • Единый часовой пояс UTC+5
+  </footer>
+
+  <!-- ============================================== -->
+  <!-- MODAL: LEAVE REQUEST                          -->
+  <!-- ============================================== -->
+  <div id="leaveModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 text-left space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900">Заявление на отпуск</h3>
+        <button onclick="closeLeaveModal()" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Тип отпуска</label>
+          <select id="modalLeaveType" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white">
+            <option value="ANNUAL">Оплачиваемый ежегодный трудовой (ст. 88 ТК РК)</option>
+            <option value="UNPAID">Без сохранения заработной платы</option>
+            <option value="STUDY">Учебный отпуск</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Дата начала</label>
+            <input id="modalLeaveStart" type="date" value="2026-11-02" class="w-full p-2 rounded-xl border border-slate-300">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Дата окончания</label>
+            <input id="modalLeaveEnd" type="date" value="2026-11-15" class="w-full p-2 rounded-xl border border-slate-300">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Причина / Обоснование</label>
+          <textarea id="modalLeaveReason" rows="2" placeholder="Плановый ежегодный трудовой отпуск..." class="w-full p-2.5 rounded-xl border border-slate-300"></textarea>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button onclick="closeLeaveModal()" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold">Отмена</button>
+        <button onclick="submitLeaveRequest()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">Отправить на визирование</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: SALARY ADVANCE REQUEST                 -->
+  <!-- ============================================== -->
+  <div id="advanceModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 text-left space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900">Запрос аванса (₸)</h3>
+        <button onclick="closeAdvanceModal()" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Сумма аванса в тенге (₸)</label>
+          <input id="modalAdvanceAmount" type="number" step="10000" value="150000" class="w-full p-2.5 rounded-xl border border-slate-300 font-mono text-sm">
+          <p class="text-[11px] text-slate-500 mt-1">Регламент ст. 113 ТК РК: плановая дата выплаты — 15-е число месяца (до 50% от должностного оклада).</p>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Комментарий</label>
+          <textarea id="modalAdvanceReason" rows="2" placeholder="На неотложные семейные расходы..." class="w-full p-2.5 rounded-xl border border-slate-300"></textarea>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button onclick="closeAdvanceModal()" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold">Отмена</button>
+        <button onclick="submitAdvanceRequest()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Запросить 150 000 ₸</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-800 text-xs font-semibold flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <span id="toastIcon">✅</span>
+    <span id="toastMessage">Действие успешно выполнено</span>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- JAVASCRIPT STATE ENGINE                        -->
+  <!-- ============================================== -->
+  <script>
+    // Initial 30% state
+    let state = {
+      role: 'worker', // 'worker' | 'manager'
+      clockedIn: true,
+      vacation: {
+        totalQuota: 24,
+        used: 7,
+        pending: 0,
+        available: 17
+      },
+      requests: [
+        {
+          id: 'req-1',
+          employee: 'Адиль Омаров',
+          type: 'SALARY_ADVANCE',
+          typeLabel: 'Аванс (₸)',
+          details: 'Межрасчетная выплата на 15.10.2026',
+          value: '150 000 ₸',
+          status: 'PENDING',
+          date: '16.10.2026'
+        },
+        {
+          id: 'req-2',
+          employee: 'Адиль Омаров',
+          type: 'ANNUAL',
+          typeLabel: 'Оплачиваемый отпуск',
+          details: '10.07.2026 — 17.07.2026',
+          value: '7 дней',
+          status: 'APPROVED',
+          date: '01.07.2026'
+        }
+      ]
+    };
+
+    // Role switcher
+    function switchRole(role) {
+      state.role = role;
+      const workerDash = document.getElementById('workerDashboard');
+      const managerDash = document.getElementById('managerDashboard');
+      const btnWorker = document.getElementById('btnRoleWorker');
+      const btnRoleMgr = document.getElementById('btnRoleManager');
+
+      if (role === 'worker') {
+        workerDash.classList.remove('hidden');
+        managerDash.classList.add('hidden');
+        btnWorker.className = 'px-3 py-1.5 rounded-lg bg-white text-blue-700 shadow-xs border border-slate-200 transition-all font-bold';
+        btnRoleMgr.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+      } else {
+        workerDash.classList.add('hidden');
+        managerDash.classList.remove('hidden');
+        btnRoleMgr.className = 'px-3 py-1.5 rounded-lg bg-white text-purple-700 shadow-xs border border-slate-200 transition-all font-bold';
+        btnWorker.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+      }
+      renderTables();
+    }
+
+    // Toggle Clock in / Clock out
+    function toggleClockIn() {
+      state.clockedIn = !state.clockedIn;
+      const btn = document.getElementById('btnClockIn');
+      const icon = document.getElementById('clockInIcon');
+      const text = document.getElementById('clockInText');
+
+      if (state.clockedIn) {
+        btn.className = 'px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 shadow-md active:scale-95';
+        icon.textContent = '🟢';
+        text.textContent = 'На смене (08:55)';
+        showToast('✅', 'Приход зафиксирован: 08:55 (UTC+5)');
+      } else {
+        btn.className = 'px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 shadow-md active:scale-95';
+        icon.textContent = '🔴';
+        text.textContent = 'Уход зафиксирован';
+        showToast('ℹ️', 'Смена закрыта в табеле Т-13');
+      }
+    }
+
+    // Modals
+    function openLeaveModal() {
+      document.getElementById('leaveModal').classList.remove('hidden');
+      document.getElementById('leaveModal').classList.add('flex');
+    }
+    function closeLeaveModal() {
+      document.getElementById('leaveModal').classList.add('hidden');
+      document.getElementById('leaveModal').classList.remove('flex');
+    }
+    function openAdvanceModal() {
+      document.getElementById('advanceModal').classList.remove('hidden');
+      document.getElementById('advanceModal').classList.add('flex');
+    }
+    function closeAdvanceModal() {
+      document.getElementById('advanceModal').classList.add('hidden');
+      document.getElementById('advanceModal').classList.remove('flex');
+    }
+
+    // Submit leave
+    function submitLeaveRequest() {
+      const type = document.getElementById('modalLeaveType').value;
+      const start = document.getElementById('modalLeaveStart').value;
+      const end = document.getElementById('modalLeaveEnd').value;
+      const reason = document.getElementById('modalLeaveReason').value || 'Плановый отпуск';
+
+      const newReq = {
+        id: 'req-' + Date.now(),
+        employee: 'Адиль Омаров',
+        type: type,
+        typeLabel: type === 'ANNUAL' ? 'Оплачиваемый отпуск' : 'Без сохранения',
+        details: `${start} — ${end}`,
+        value: '14 дней',
+        status: 'PENDING',
+        date: 'Сегодня'
+      };
+
+      state.requests.unshift(newReq);
+      state.vacation.pending += 14;
+      closeLeaveModal();
+      renderTables();
+      showToast('🏖️', 'Заявление на отпуск отправлено руководителю');
+    }
+
+    // Submit advance
+    function submitAdvanceRequest() {
+      const amount = document.getElementById('modalAdvanceAmount').value || 150000;
+      const newReq = {
+        id: 'req-' + Date.now(),
+        employee: 'Адиль Омаров',
+        type: 'SALARY_ADVANCE',
+        typeLabel: 'Аванс (₸)',
+        details: 'Межрасчетная выплата на 15 число',
+        value: Number(amount).toLocaleString('ru-RU') + ' ₸',
+        status: 'PENDING',
+        date: 'Сегодня'
+      };
+
+      state.requests.unshift(newReq);
+      closeAdvanceModal();
+      renderTables();
+      showToast('💳', 'Запрос аванса успешно отправлен');
+    }
+
+    // Manager Actions
+    function approveRequest(id) {
+      const req = state.requests.find(r => r.id === id);
+      if (req) {
+        req.status = 'APPROVED';
+        if (req.type === 'ANNUAL') {
+          state.vacation.used += 14;
+          state.vacation.available -= 14;
+          state.vacation.pending = Math.max(0, state.vacation.pending - 14);
+        }
+        renderTables();
+        showToast('✅', `Заявка сотрудника ${req.employee} одобрена`);
+      }
+    }
+
+    function rejectRequest(id) {
+      const req = state.requests.find(r => r.id === id);
+      if (req) {
+        req.status = 'REJECTED';
+        if (req.type === 'ANNUAL') {
+          state.vacation.pending = Math.max(0, state.vacation.pending - 14);
+        }
+        renderTables();
+        showToast('❌', `Заявка сотрудника ${req.employee} отклонена`);
+      }
+    }
+
+    // Render tables
+    function renderTables() {
+      // 1. Worker Table
+      const workerTbody = document.getElementById('workerRequestsTable');
+      workerTbody.innerHTML = state.requests.map(r => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-3 px-4 font-bold text-slate-900">${r.typeLabel}</td>
+          <td class="py-3 px-4 text-slate-500">${r.details}</td>
+          <td class="py-3 px-4 font-mono font-bold ${r.type === 'SALARY_ADVANCE' ? 'text-emerald-700' : 'text-slate-800'}">${r.value}</td>
+          <td class="py-3 px-4">
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${
+              r.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+              r.status === 'REJECTED' ? 'bg-red-50 text-red-700 border border-red-200' :
+              'bg-amber-50 text-amber-700 border border-amber-200'
+            }">
+              ${r.status === 'APPROVED' ? 'Одобрено' : r.status === 'REJECTED' ? 'Отклонено' : 'На рассмотрении'}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-slate-400 font-mono">${r.date}</td>
+        </tr>
+      `).join('');
+
+      // 2. Manager Table
+      const managerTbody = document.getElementById('managerRequestsTable');
+      const pendingCount = state.requests.filter(r => r.status === 'PENDING').length;
+      document.getElementById('managerPendingBadge').textContent = `${pendingCount} ${pendingCount === 1 ? 'заявка' : 'заявок'}`;
+
+      managerTbody.innerHTML = state.requests.map(r => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-3 px-4 font-bold text-slate-900">${r.employee}</td>
+          <td class="py-3 px-4">${r.typeLabel}</td>
+          <td class="py-3 px-4 font-mono font-bold text-slate-800">${r.value}</td>
+          <td class="py-3 px-4">
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${
+              r.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' :
+              r.status === 'REJECTED' ? 'bg-red-50 text-red-700' :
+              'bg-amber-50 text-amber-700 font-bold'
+            }">
+              ${r.status === 'APPROVED' ? 'Одобрено' : r.status === 'REJECTED' ? 'Отклонено' : 'Ожидает визы'}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-right">
+            ${r.status === 'PENDING' ? `
+              <div class="flex items-center justify-end gap-1.5">
+                <button onclick="approveRequest('${r.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px]">Одобрить</button>
+                <button onclick="rejectRequest('${r.id}')" class="px-2.5 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-bold text-[11px]">Отклонить</button>
+              </div>
+            ` : `
+              <span class="text-slate-400 text-[11px]">Резолюция наложена</span>
+            `}
+          </td>
+        </tr>
+      `).join('');
+
+      // 3. Update Balance numbers
+      document.getElementById('availableDays').textContent = state.vacation.available;
+      document.getElementById('usedDays').textContent = state.vacation.used + ' дней';
+      document.getElementById('pendingDays').textContent = state.vacation.pending + ' дней';
+      const pct = (state.vacation.available / state.vacation.totalQuota) * 100;
+      document.getElementById('vacationProgress').style.width = pct + '%';
+    }
+
+    // Toast helper
+    function showToast(icon, message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastMessage').textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // Initial render
+    renderTables();
+  </script>
+</body>
+</html>
