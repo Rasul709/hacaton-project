@@ -16,6 +16,7 @@ import {
   Send,
   GraduationCap,
   Bot,
+  Presentation,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -88,6 +89,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Уведомления',
       to: '/notifications',
       icon: Bell,
+      roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
+    },
+    {
+      label: 'Презентация',
+      to: '/presentation',
+      icon: Presentation,
+      badge: '30 Слайдов',
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {

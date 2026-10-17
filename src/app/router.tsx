@@ -38,6 +38,9 @@ const AcademyPage = React.lazy(() =>
 const AiAssistantPage = React.lazy(() =>
   import('@/features/ai-assistant/AiAssistantPage').then((m) => ({ default: m.AiAssistantPage }))
 );
+const PresentationPage = React.lazy(() =>
+  import('@/features/presentation/PresentationPage').then((m) => ({ default: m.PresentationPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div className="space-y-6 animate-pulse p-1 text-left">
@@ -123,6 +126,10 @@ export const router = createBrowserRouter([
           {
             path: 'ai-assistant',
             element: withSuspense(AiAssistantPage),
+          },
+          {
+            path: 'presentation',
+            element: withSuspense(PresentationPage),
           },
         ],
       },
