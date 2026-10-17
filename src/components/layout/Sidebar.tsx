@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Users,
@@ -33,73 +34,74 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMobileClose,
 }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = [
     {
-      label: 'Дашборд',
+      label: t('nav.dashboard', 'Дашборд'),
       to: '/dashboard',
       icon: LayoutDashboard,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Сотрудники',
+      label: t('nav.employees', 'Сотрудники'),
       to: '/employees',
       icon: Users,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD'],
     },
     {
-      label: 'Департаменты',
+      label: t('nav.departments', 'Департаменты'),
       to: '/departments',
       icon: Building2,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD'],
     },
     {
-      label: 'Посещаемость',
+      label: t('nav.attendance', 'Посещаемость'),
       to: '/attendance',
       icon: Clock,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Мои заявки',
+      label: t('nav.leave', 'Мои заявки'),
       to: '/leave',
       icon: CalendarDays,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Задачи',
+      label: t('nav.tasks', 'Задачи'),
       to: '/tasks',
       icon: CheckSquare,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Jana Academy',
+      label: t('nav.academy', 'Jana Academy'),
       to: '/academy',
       icon: GraduationCap,
       badge: 'LMS',
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'HR-ассистент',
+      label: t('nav.aiAssistant', 'HR-ассистент'),
       to: '/ai-assistant',
       icon: Bot,
       badge: 'AI',
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Уведомления',
+      label: t('nav.notifications', 'Уведомления'),
       to: '/notifications',
       icon: Bell,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Презентация',
+      label: t('nav.presentation', 'Презентация'),
       to: '/presentation',
       icon: Presentation,
       badge: '30 Слайдов',
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],
     },
     {
-      label: 'Настройки',
+      label: t('nav.settings', 'Настройки'),
       to: '/settings',
       icon: Settings,
       roles: ['ADMIN', 'HR_MANAGER', 'DEPARTMENT_HEAD', 'EMPLOYEE'],

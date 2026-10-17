@@ -85,6 +85,8 @@ export interface LeaveRequest {
   status: LeaveStatus;
   submittedAt: string;
   amount?: number; // For SALARY_ADVANCE
+  attachmentUrl?: string;
+  attachmentName?: string;
   reviewerId?: string;
   reviewerName?: string;
   reviewComment?: string;

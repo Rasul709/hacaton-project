@@ -20,14 +20,22 @@ import {
   CheckCircle2,
   Palmtree,
   Download,
+  Printer,
+  Paperclip,
+  Table,
+  BarChart3,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { exportToCsv } from '@/lib/utils/exportCsv';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { VacationGanttChart } from './VacationGanttChart';
 
 export const LeavePage: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
+  const [viewMode, setViewMode] = useState<'table' | 'gantt'>('table');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -78,7 +86,10 @@ export const LeavePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['leaveRequests'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      toast.success('Заявление одобрено', `Отпуск сотрудника ${data.employeeName} согласован`);
+      toast.success(
+        'Заявление одобрено',
+        `Отпуск сотрудника ${data.employeeName} согласован. Приказ Т-6 подписан ЭЦП, пуш отправлен в Telegram (@JanaPostCourierBot)`
+      );
     },
     onError: (err: any) => {
       toast.error('Ошибка согласования', err?.message);
@@ -195,6 +206,14 @@ export const LeavePage: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
+            leftIcon={<Printer className="w-4 h-4 text-slate-500" />}
+            onClick={() => window.open(api.documents.getTimesheetUrl(), '_blank')}
+            title="Сформировать табель учета рабочего времени (Форма Т-13)"
+          >
+            Табель Т-13
+          </Button>
+          <Button
+            variant="outline"
             leftIcon={<Download className="w-4 h-4 text-slate-500" />}
             onClick={handleExport}
             disabled={requests.length === 0}
@@ -283,7 +302,41 @@ export const LeavePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* View Mode Switcher: Table vs Gantt Chart */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="inline-flex bg-slate-200/80 p-1 rounded-2xl text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setViewMode('table')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+              viewMode === 'table'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Table className="w-3.5 h-3.5" />
+            <span>{t('leave.table', 'Таблица заявок')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('gantt')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+              viewMode === 'gantt'
+                ? 'bg-white text-blue-700 shadow-xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+            <span>{t('leave.gantt', 'График отпусков (ст. 93 ТК РК)')}</span>
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'gantt' ? (
+        <VacationGanttChart requests={requests} />
+      ) : (
+        <>
+          {/* Filter and Search Bar */}
       <div className="bg-white rounded-2xl border border-[#E4E7EC] p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Status Tabs */}
         <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
@@ -404,9 +457,21 @@ export const LeavePage: React.FC = () => {
                         : `${req.daysCount} дн.`}
                     </td>
 
-                    {/* Reason */}
-                    <td className="py-3.5 px-4 text-slate-600 max-w-xs truncate" title={req.reason}>
-                      {req.reason}
+                    {/* Reason & Attachment */}
+                    <td className="py-3.5 px-4 text-slate-600 max-w-xs">
+                      <p className="truncate" title={req.reason}>{req.reason}</p>
+                      {req.attachmentUrl && (
+                        <a
+                          href={req.attachmentUrl.startsWith('http') ? req.attachmentUrl : `http://localhost:3000${req.attachmentUrl}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 mt-1 text-[11px] text-blue-600 hover:text-blue-800 font-medium bg-blue-50/70 px-2 py-0.5 rounded border border-blue-100"
+                          title={req.attachmentName || 'Вложенный подтверждающий документ'}
+                        >
+                          <Paperclip className="w-3 h-3 shrink-0" />
+                          <span className="truncate max-w-[130px]">{req.attachmentName || 'Документ'}</span>
+                        </a>
+                      )}
                     </td>
 
                     {/* Submitted At */}
@@ -437,6 +502,16 @@ export const LeavePage: React.FC = () => {
 
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right">
+                      {req.status === 'APPROVED' && (
+                        <button
+                          onClick={() => window.open(api.documents.getLeaveOrderUrl(req.id), '_blank')}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200"
+                          title="Распечатать приказ о предоставлении отпуска по форме Т-6 (ТК РК)"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          <span>Приказ Т-6</span>
+                        </button>
+                      )}
                       {req.status === 'PENDING' && (
                         <div className="flex items-center justify-end gap-1.5">
                           {canReview && (
@@ -475,6 +550,8 @@ export const LeavePage: React.FC = () => {
             </table>
           </div>
         </div>
+      )}
+        </>
       )}
 
       {/* Leave Request Form Modal */}

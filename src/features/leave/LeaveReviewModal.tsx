@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { LeaveTypeBadge } from '@/components/ui/Badge';
 import { formatKazakhstanDate } from '@/lib/utils';
-import { Check, X } from 'lucide-react';
+import { Check, X, FileText, ExternalLink } from 'lucide-react';
 
 interface LeaveReviewModalProps {
   isOpen: boolean;
@@ -70,6 +70,25 @@ export const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
               «{request.reason}»
             </p>
           </div>
+          {request.attachmentUrl && (
+            <div className="flex items-center justify-between p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-lg text-xs mt-2">
+              <div className="flex items-center gap-2 truncate">
+                <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                <span className="font-medium text-blue-900 truncate">
+                  {request.attachmentName || 'Подтверждающий документ'}
+                </span>
+              </div>
+              <a
+                href={request.attachmentUrl.startsWith('http') ? request.attachmentUrl : `http://localhost:3000${request.attachmentUrl}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 transition-colors shrink-0 ml-2"
+              >
+                <span>Просмотреть</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
         </div>
 
         <Textarea

@@ -12,8 +12,10 @@ import {
   HeartHandshake,
   Shield,
   Printer,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { api } from '@/lib/api';
 
 interface EmployeeDetailsModalProps {
   isOpen: boolean;
@@ -142,10 +144,20 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
               variant="outline"
               size="sm"
               leftIcon={<Printer className="w-4 h-4 text-slate-500" />}
-              onClick={() => window.print()}
-              title="Печать личной карточки работника (форма Т-2)"
+              onClick={() => window.open(api.documents.getEmployeeCardUrl(employee.id), '_blank')}
+              title="Печать личной карточки работника (типовая форма Т-2 РК)"
             >
               Печать (Т-2)
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<FileText className="w-4 h-4 text-emerald-600" />}
+              onClick={() => window.open(api.documents.getPayslipUrl(employee.id), '_blank')}
+              title="Печать расчетного листка (ст. 113 ТК РК)"
+              className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-200"
+            >
+              Расчетный листок (ст. 113)
             </Button>
             {onEdit && (
               <Button

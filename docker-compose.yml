@@ -1,16 +1,24 @@
 version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: janapost-hr-frontend
+  postgres:
+    image: postgres:16-alpine
+    container_name: janapost-hr-postgres
     restart: unless-stopped
+    environment:
+      POSTGRES_USER: janapost
+      POSTGRES_PASSWORD: janapost_secret_password
+      POSTGRES_DB: janapost_hr
     ports:
-      - "80:80"
-    depends_on:
-      - backend
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U janapost -d janapost_hr"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - hr-network
 
@@ -25,8 +33,32 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://janapost:janapost_secret_password@postgres:5432/janapost_hr
+      - JWT_SECRET=janapost-hackathon-2026-secret-key-almaty
+    volumes:
+      - ./server/uploads:/app/server/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - hr-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: janapost-hr-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hr-network
+
+volumes:
+  pgdata:
+    driver: local
 
 networks:
   hr-network:

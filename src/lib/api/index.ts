@@ -337,6 +337,43 @@ export const api = {
     },
   },
 
+  // --- Uploads ---
+  upload: async (file: File): Promise<{ url: string; filename: string }> => {
+    if (isDemoModeEnabled()) {
+      return {
+        url: URL.createObjectURL(file),
+        filename: file.name,
+      };
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiRequest<{ url: string; filename: string }>('/upload', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  // --- Statutory Documents (Kazakhstan Labor Code Forms) ---
+  documents: {
+    getLeaveOrderUrl: (id: string) => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      return `${base.replace(/\/$/, '')}/documents/leave-order/${id}`;
+    },
+    getEmployeeCardUrl: (id: string) => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      return `${base.replace(/\/$/, '')}/documents/employee-card/${id}`;
+    },
+    getTimesheetUrl: () => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      return `${base.replace(/\/$/, '')}/documents/timesheet`;
+    },
+    getPayslipUrl: (id: string, month?: string) => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      const q = month ? `?month=${encodeURIComponent(month)}` : '';
+      return `${base.replace(/\/$/, '')}/documents/payslip/${id}${q}`;
+    },
+  },
+
   demo: {
     resetData: () => mockService.resetDemoData(),
   },

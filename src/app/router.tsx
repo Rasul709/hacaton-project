@@ -41,6 +41,9 @@ const AiAssistantPage = React.lazy(() =>
 const PresentationPage = React.lazy(() =>
   import('@/features/presentation/PresentationPage').then((m) => ({ default: m.PresentationPage }))
 );
+const DocumentVerificationPage = React.lazy(() =>
+  import('@/features/verification/DocumentVerificationPage').then((m) => ({ default: m.DocumentVerificationPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div className="space-y-6 animate-pulse p-1 text-left">
@@ -71,6 +74,11 @@ export const router = createBrowserRouter([
     path: '/login',
     errorElement: <RouteErrorBoundary />,
     element: withSuspense(LoginPage),
+  },
+  {
+    path: '/verify/:id',
+    errorElement: <RouteErrorBoundary />,
+    element: withSuspense(DocumentVerificationPage),
   },
   {
     path: '/',

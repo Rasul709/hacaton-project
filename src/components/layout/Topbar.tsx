@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppNotification } from '@/types';
+import { JuryDemoWidget } from './JuryDemoWidget';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 interface TopbarProps {
   onMobileMenuToggle: () => void;
@@ -23,6 +25,7 @@ interface TopbarProps {
 
 export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch }) => {
   const { user, logout } = useAuth();
+  const { language, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const isDemo = isDemoModeEnabled();
 
@@ -92,7 +95,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch
           className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors text-xs font-medium w-48 sm:w-64 md:w-80"
         >
           <Search className="w-4 h-4 shrink-0 text-slate-400" />
-          <span className="truncate">Поиск по сотрудникам, задачам...</span>
+          <span className="truncate">{t('topbar.search', 'Поиск по сотрудникам, задачам...')}</span>
           <kbd className="hidden sm:inline-block ml-auto px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] text-slate-500 font-mono">
             ⌘K
           </kbd>
@@ -111,6 +114,18 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch
           <span>{formatKazakhstanDate(currentTime)}</span>
           <span className="text-[10px] text-slate-400 font-mono">(UTC+5 Almaty)</span>
         </div>
+
+        {/* Language Switcher (KZ / RU) */}
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors border border-slate-200"
+          title="Тілді ауыстыру / Сменить язык"
+        >
+          <span>{language === 'ru' ? '🇰🇿 ҚАЗ' : '🇷🇺 РУС'}</span>
+        </button>
+
+        {/* Jury / Pitch Walkthrough Mode */}
+        <JuryDemoWidget />
 
         {/* Demo Mode Toggle Badge */}
         <div className="flex items-center">
