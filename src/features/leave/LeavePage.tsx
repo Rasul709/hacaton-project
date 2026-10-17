@@ -6,7 +6,7 @@ import { LeaveRequest } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { LeaveStatusBadge, LeaveTypeBadge } from '@/components/ui/Badge';
 import { EmptyState, TableSkeleton } from '@/components/ui/EmptyState';
-import { formatKazakhstanDate } from '@/lib/utils';
+import { formatKazakhstanDate, getAttachmentUrl } from '@/lib/utils';
 import { LeaveRequestModal } from './LeaveRequestModal';
 import { LeaveReviewModal } from './LeaveReviewModal';
 import {
@@ -462,7 +462,7 @@ export const LeavePage: React.FC = () => {
                       <p className="truncate" title={req.reason}>{req.reason}</p>
                       {req.attachmentUrl && (
                         <a
-                          href={req.attachmentUrl.startsWith('http') ? req.attachmentUrl : `http://localhost:3000${req.attachmentUrl}`}
+                          href={getAttachmentUrl(req.attachmentUrl)}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 mt-1 text-[11px] text-blue-600 hover:text-blue-800 font-medium bg-blue-50/70 px-2 py-0.5 rounded border border-blue-100"

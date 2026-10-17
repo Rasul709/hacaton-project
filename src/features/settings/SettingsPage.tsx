@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/Toast';
+import { getInitials } from '@/lib/utils';
 
 const passwordSchema = z
   .object({
@@ -127,8 +128,7 @@ export const SettingsPage: React.FC = () => {
               />
             ) : (
               <span>
-                {user?.firstName?.[0]}
-                {user?.lastName?.[0]}
+                {getInitials(user?.firstName || '', user?.lastName || '')}
               </span>
             )}
           </div>

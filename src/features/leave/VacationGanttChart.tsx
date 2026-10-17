@@ -40,16 +40,17 @@ export const VacationGanttChart: React.FC<VacationGanttChartProps> = ({
       const endYear = new Date(req.endDate).getFullYear();
       if (startYear !== selectedYear && endYear !== selectedYear) return;
 
-      const existing = map.get(req.employeeId) || {
-        employeeName: req.employeeName,
+      const empId = req.employeeId || `emp-${req.employeeName || 'unknown'}`;
+      const existing = map.get(empId) || {
+        employeeName: req.employeeName || 'Сотрудник',
         leaves: [],
       };
       existing.leaves.push(req);
-      map.set(req.employeeId, existing);
+      map.set(empId, existing);
     });
 
     return Array.from(map.values()).sort((a, b) =>
-      a.employeeName.localeCompare(b.employeeName)
+      (a.employeeName || '').localeCompare(b.employeeName || '')
     );
   }, [requests, selectedYear]);
 
@@ -67,6 +68,10 @@ export const VacationGanttChart: React.FC<VacationGanttChartProps> = ({
   const getBarStyle = (req: LeaveRequest) => {
     const start = new Date(req.startDate);
     const end = new Date(req.endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return { left: '0%', width: '0%' };
+    }
 
     const startClamped = start.getFullYear() < selectedYear ? new Date(selectedYear, 0, 1) : start;
     const endClamped = end.getFullYear() > selectedYear ? new Date(selectedYear, 11, 31) : end;

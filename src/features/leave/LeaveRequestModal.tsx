@@ -97,6 +97,13 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setAttachment(null);
+      setUploadError(null);
+    }
+  }, [isOpen]);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

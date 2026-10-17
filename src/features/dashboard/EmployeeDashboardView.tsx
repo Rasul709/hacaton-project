@@ -54,6 +54,18 @@ export const EmployeeDashboardView: React.FC = () => {
   // Filter requests that belong to this employee (or demo fallback)
   const employeeRequests = myRequests.slice(0, 4);
 
+  // Dynamic vacation balance according to Kazakhstan Labor Code (24 days)
+  const userLeaves = myRequests.filter((r) => r.employeeId === user?.id || user?.role === 'EMPLOYEE');
+  const usedAnnualDays = userLeaves
+    .filter((r) => r.leaveType === 'ANNUAL' && r.status === 'APPROVED')
+    .reduce((sum, r) => sum + r.daysCount, 0);
+  const totalQuota = 24;
+  const availableDays = Math.max(0, totalQuota - usedAnnualDays);
+  const plannedDays = userLeaves
+    .filter((r) => r.leaveType === 'ANNUAL' && r.status === 'PENDING')
+    .reduce((sum, r) => sum + r.daysCount, 0);
+  const percentAvailable = Math.round((availableDays / totalQuota) * 100);
+
   // Employee details fallback
   const hireDate = '15 марта 2023 г.';
   const supervisor = {
@@ -179,23 +191,23 @@ export const EmployeeDashboardView: React.FC = () => {
             <p className="text-xs text-[#667085] mt-0.5">Оплачиваемый трудовой отпуск</p>
 
             <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-3xl font-black text-slate-900">17</span>
+              <span className="text-3xl font-black text-slate-900">{availableDays}</span>
               <span className="text-sm font-semibold text-slate-500">из 24 дней доступно</span>
             </div>
 
             {/* Progress bar */}
             <div className="w-full bg-slate-100 rounded-full h-2.5 mt-3 overflow-hidden">
-              <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: '70.8%' }} />
+              <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${percentAvailable}%` }} />
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                 <span className="text-slate-500 block">Использовано</span>
-                <span className="font-bold text-slate-800 text-sm">7 дней</span>
+                <span className="font-bold text-slate-800 text-sm">{usedAnnualDays} дн.</span>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                 <span className="text-slate-500 block">Запланировано</span>
-                <span className="font-bold text-blue-600 text-sm">0 дней</span>
+                <span className="font-bold text-blue-600 text-sm">{plannedDays} дн.</span>
               </div>
             </div>
           </div>

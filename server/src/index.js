@@ -41,12 +41,12 @@ const EMAIL_ALIASES = {
 };
 
 function findEmployeeByEmail(email) {
-  if (!email) return db.employees[0];
+  if (!email) return null;
   const normalized = email.toLowerCase().trim();
   const target = EMAIL_ALIASES[normalized] || normalized;
   return (
-    db.employees.find((e) => e.email.toLowerCase() === target || e.email.toLowerCase() === normalized) ||
-    db.employees[0]
+    db.employees.find((e) => (e.email || '').toLowerCase() === target || (e.email || '').toLowerCase() === normalized) ||
+    null
   );
 }
 
@@ -134,6 +134,9 @@ app.post('/api/v1/system/reset-db', (req, res) => {
 app.post('/api/v1/auth/login', (req, res) => {
   const { email, password } = req.body;
   const user = findEmployeeByEmail(email);
+  if (!user) {
+    return res.status(401).json({ error: 'Неверный адрес электронной почты или пароль' });
+  }
 
   // Verify password with bcrypt (supports 'password123' for hackathon jury convenience)
   const isMatch = verifyPassword(password || 'password123', user.passwordHash);
@@ -321,11 +324,11 @@ app.get('/api/v1/employees', (req, res) => {
   if (q) {
     filtered = filtered.filter(
       (e) =>
-        e.firstName.toLowerCase().includes(q) ||
-        e.lastName.toLowerCase().includes(q) ||
-        e.email.toLowerCase().includes(q) ||
-        e.jobTitle.toLowerCase().includes(q) ||
-        e.employeeId.toLowerCase().includes(q)
+        (e.firstName || '').toLowerCase().includes(q) ||
+        (e.lastName || '').toLowerCase().includes(q) ||
+        (e.email || '').toLowerCase().includes(q) ||
+        (e.jobTitle || '').toLowerCase().includes(q) ||
+        (e.employeeId || '').toLowerCase().includes(q)
     );
   }
 

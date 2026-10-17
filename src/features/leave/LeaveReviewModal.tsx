@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { LeaveTypeBadge } from '@/components/ui/Badge';
-import { formatKazakhstanDate } from '@/lib/utils';
+import { formatKazakhstanDate, getAttachmentUrl } from '@/lib/utils';
 import { Check, X, FileText, ExternalLink } from 'lucide-react';
 
 interface LeaveReviewModalProps {
@@ -79,7 +79,7 @@ export const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
                 </span>
               </div>
               <a
-                href={request.attachmentUrl.startsWith('http') ? request.attachmentUrl : `http://localhost:3000${request.attachmentUrl}`}
+                href={getAttachmentUrl(request.attachmentUrl)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 transition-colors shrink-0 ml-2"

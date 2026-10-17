@@ -107,6 +107,18 @@ async function run() {
     record('Auth Login (Admin)', false, e.message);
   }
 
+  // 3b. Auth Security (Reject Unknown Email)
+  try {
+    const res = await req('POST', '/api/v1/auth/login', { email: 'unauthorized.stranger@fake.kz', password: 'password123' });
+    if (res.status === 401) {
+      record('Auth Security (Unknown Email)', true, 'Correctly rejected unknown user with HTTP 401');
+    } else {
+      record('Auth Security (Unknown Email)', false, `Unexpected status: ${res.status}`);
+    }
+  } catch (e) {
+    record('Auth Security (Unknown Email)', false, e.message);
+  }
+
   // 4. Auth Me
   try {
     const res = await req('GET', '/api/v1/auth/me', null, { Authorization: `Bearer ${adminToken}` });

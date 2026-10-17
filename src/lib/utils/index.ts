@@ -62,3 +62,19 @@ export function getInitials(firstName: string, lastName: string): string {
   const l = lastName ? lastName.charAt(0).toUpperCase() : '';
   return `${f}${l}` || 'JP';
 }
+
+/**
+ * Resolves full URL for uploaded attachments supporting http, https, blob:, and relative server paths.
+ */
+export function getAttachmentUrl(url?: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url;
+  }
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1')
+    .replace(/\/api\/v1\/?$/, '')
+    .replace(/\/$/, '');
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${base}${cleanPath}`;
+}
+

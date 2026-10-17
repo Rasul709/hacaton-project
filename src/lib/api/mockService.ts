@@ -117,11 +117,11 @@ class MockService {
       const q = params.search.toLowerCase();
       list = list.filter(
         (e) =>
-          e.firstName.toLowerCase().includes(q) ||
-          e.lastName.toLowerCase().includes(q) ||
-          e.employeeId.toLowerCase().includes(q) ||
-          e.email.toLowerCase().includes(q) ||
-          e.jobTitle.toLowerCase().includes(q)
+          (e.firstName || '').toLowerCase().includes(q) ||
+          (e.lastName || '').toLowerCase().includes(q) ||
+          (e.employeeId || '').toLowerCase().includes(q) ||
+          (e.email || '').toLowerCase().includes(q) ||
+          (e.jobTitle || '').toLowerCase().includes(q)
       );
     }
 

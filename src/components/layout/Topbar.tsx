@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthContext';
 import { isDemoModeEnabled, setDemoModeEnabled, api } from '@/lib/api';
 import { formatKazakhstanDate, formatKazakhstanTime } from '@/lib/utils';
@@ -14,7 +15,6 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AppNotification } from '@/types';
 import { JuryDemoWidget } from './JuryDemoWidget';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
@@ -28,11 +28,11 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch
   const { language, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const isDemo = isDemoModeEnabled();
+  const queryClient = useQueryClient();
 
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -57,19 +57,19 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Load notifications
-  useEffect(() => {
-    api.notifications
-      .getAll()
-      .then((data) => setNotifications(data.slice(0, 5)))
-      .catch((err) => console.error(err));
-  }, []);
+  // Live Notifications via TanStack Query
+  const { data: allNotifications = [] } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => api.notifications.getAll(),
+    refetchInterval: 30000,
+  });
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const notifications = allNotifications.slice(0, 5);
+  const unreadCount = allNotifications.filter((n) => !n.isRead).length;
 
   const handleMarkAllRead = async () => {
     await api.notifications.markAllAsRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
   };
 
   const handleLogout = async () => {
@@ -200,8 +200,12 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch
                       className={`p-3.5 hover:bg-slate-50 transition-colors cursor-pointer text-left ${
                         !n.isRead ? 'bg-blue-50/40' : ''
                       }`}
-                      onClick={() => {
+                      onClick={async () => {
                         setNotificationsOpen(false);
+                        if (!n.isRead) {
+                          await api.notifications.markAsRead(n.id);
+                          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                        }
                         if (n.link) navigate(n.link);
                       }}
                     >

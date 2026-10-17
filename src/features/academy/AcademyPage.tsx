@@ -41,7 +41,7 @@ export const AcademyPage: React.FC = () => {
   }, [courses]);
 
   const completedCount = courses.filter((c) => c.isCompleted).length;
-  const overallProgress = Math.round((completedCount / courses.length) * 100);
+  const overallProgress = courses.length > 0 ? Math.round((completedCount / courses.length) * 100) : 0;
 
   const handleStartCourse = (course: Course) => {
     setActiveCourse(course);
@@ -85,7 +85,7 @@ export const AcademyPage: React.FC = () => {
       }
     });
 
-    const percent = Math.round((correct / activeCourse.quiz.length) * 100);
+    const percent = activeCourse.quiz.length > 0 ? Math.round((correct / activeCourse.quiz.length) * 100) : 100;
     setQuizScore(percent);
     setQuizSubmitted(true);
 
@@ -102,6 +102,7 @@ export const AcademyPage: React.FC = () => {
             : c
         )
       );
+      setActiveCourse((prev) => (prev ? { ...prev, isCompleted: true, progressPercent: 100, score: percent } : null));
     } else {
       toast.error(
         'Тест не пройден',
@@ -119,6 +120,7 @@ export const AcademyPage: React.FC = () => {
       )
     );
     if (activeCourse?.id === courseId) {
+      setActiveCourse((prev) => (prev ? { ...prev, isCompleted: false, progressPercent: 0, score: undefined } : null));
       setIsTakingQuiz(false);
       setQuizAnswers({});
       setQuizSubmitted(false);
