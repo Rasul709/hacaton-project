@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
-import { LeaveRequest, LeaveStatus, LeaveType } from '@/types';
+import { LeaveRequest } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { LeaveStatusBadge, LeaveTypeBadge } from '@/components/ui/Badge';
 import { EmptyState, TableSkeleton } from '@/components/ui/EmptyState';
@@ -18,9 +18,7 @@ import {
   RotateCcw,
   Clock,
   CheckCircle2,
-  XCircle,
   Palmtree,
-  Sparkles,
   Download,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';

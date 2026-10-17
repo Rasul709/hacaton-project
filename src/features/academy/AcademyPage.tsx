@@ -1,28 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  GraduationCap,
   BookOpen,
   CheckCircle2,
   Clock,
   Award,
   ArrowRight,
-  PlayCircle,
-  HelpCircle,
   ChevronLeft,
   ChevronRight,
-  FileCheck2,
-  Sparkles,
   RotateCcw,
-  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useAuth } from '@/features/auth/AuthContext';
 import { useToast } from '@/components/ui/Toast';
-import { Course, CourseLesson } from '@/types';
+import { Course } from '@/types';
 import { INITIAL_COURSES } from './academyData';
 
 export const AcademyPage: React.FC = () => {
-  const { user } = useAuth();
   const toast = useToast();
 
   const [courses, setCourses] = useState<Course[]>(() => {
@@ -308,6 +300,11 @@ export const AcademyPage: React.FC = () => {
                   </Button>
                 ) : (
                   <div className="flex items-center gap-3">
+                    {quizScore !== null && (
+                      <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                        Результат: {quizScore}%
+                      </span>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"

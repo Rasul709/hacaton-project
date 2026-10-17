@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: janapost-hr-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hr-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: janapost-hr-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    networks:
+      - hr-network
+
+networks:
+  hr-network:
+    driver: bridge

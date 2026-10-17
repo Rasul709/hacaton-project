@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -15,12 +15,8 @@ import {
   LogIn,
   LogOut,
   Search,
-  Filter,
   Calendar,
   CheckCircle2,
-  AlertTriangle,
-  Timer,
-  Sparkles,
   Download,
   Printer,
 } from 'lucide-react';
@@ -31,7 +27,7 @@ export const AttendancePage: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const [dateFilter, setDateFilter] = useState<string>(
+  const [dateFilter, setDateFilter] = useState<string>(() =>
     new Date().toISOString().split('T')[0]
   );
   const [search, setSearch] = useState('');
@@ -45,7 +41,7 @@ export const AttendancePage: React.FC = () => {
   });
 
   // Find today's record for current logged in user
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const userTodayRecord = records.find(
     (r) => r.employeeId === user?.id && r.workDate === todayStr
   );

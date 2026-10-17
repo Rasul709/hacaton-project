@@ -15,14 +15,12 @@ import {
   Users,
   UserPlus,
   Search,
-  Filter,
   Eye,
   Edit2,
   UserX,
   UserCheck,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
   Download,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
@@ -47,20 +45,20 @@ export const EmployeesPage: React.FC = () => {
   useEffect(() => {
     setSearchParams(
       (prev) => {
+        const currentQ = prev.get('q') || '';
+        if (debouncedSearch === currentQ) return prev;
         const next = new URLSearchParams(prev);
         if (debouncedSearch) {
           next.set('q', debouncedSearch);
         } else {
           next.delete('q');
         }
-        if (debouncedSearch !== urlSearch) {
-          next.set('page', '1');
-        }
+        next.set('page', '1');
         return next;
       },
       { replace: true }
     );
-  }, [debouncedSearch]);
+  }, [debouncedSearch, setSearchParams]);
 
   const updateParam = (key: string, val: string) => {
     setSearchParams((prev) => {

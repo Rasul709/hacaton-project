@@ -10,7 +10,6 @@ import {
   Calendar,
   MapPin,
   HeartHandshake,
-  UserCheck,
   Shield,
   Printer,
 } from 'lucide-react';

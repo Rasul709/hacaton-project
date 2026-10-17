@@ -2,27 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Bot,
   Send,
-  Sparkles,
   ShieldCheck,
-  AlertTriangle,
   BookOpen,
   HelpCircle,
-  FileText,
   RotateCcw,
-  CheckCircle2,
-  ExternalLink,
-  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ChatMessage } from '@/types';
 import {
   queryHrAssistant,
   POPULAR_QUESTIONS,
-  HR_KNOWLEDGE_BASE,
 } from './aiKnowledgeService';
 
 export const AiAssistantPage: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: 'welcome',
       sender: 'assistant',

@@ -6,7 +6,6 @@ import {
   Menu,
   Bell,
   Search,
-  CheckCircle2,
   Database,
   Radio,
   LogOut,

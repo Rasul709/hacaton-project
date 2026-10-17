@@ -10,13 +10,10 @@ import {
   User,
   Lock,
   Server,
-  Database,
   RotateCcw,
   CheckCircle2,
   AlertCircle,
-  Radio,
   LogOut,
-  Shield,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/Toast';
@@ -85,7 +82,7 @@ export const SettingsPage: React.FC = () => {
         setPingMessage(`Сервер вернул статус ${res.status}`);
         toast.error('Сервер вернул ошибку', `HTTP Status: ${res.status}`);
       }
-    } catch (err: unknown) {
+    } catch {
       setPingStatus('offline');
       setPingMessage('Сервер недоступен по адресу: ' + apiUrl);
       toast.error('Сервер недоступен', 'Проверьте запуск сервера на порту 3000');

@@ -3,11 +3,8 @@ import {
   Bot,
   Send,
   X,
-  Sparkles,
   Maximize2,
   BookOpen,
-  RotateCcw,
-  ShieldCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ChatMessage } from '@/types';
@@ -17,7 +14,7 @@ export const AiAssistantFloatingWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: 'floating-welcome',
       sender: 'assistant',

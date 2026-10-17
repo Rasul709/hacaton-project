@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { TaskItem, TaskPriority, TaskStatus } from '@/types';
+import { TaskItem, TaskStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { TaskPriorityBadge, TaskStatusBadge } from '@/components/ui/Badge';
 import { EmptyState, TableSkeleton } from '@/components/ui/EmptyState';
@@ -15,10 +15,7 @@ import {
   List,
   Calendar,
   User,
-  AlertCircle,
   ArrowRight,
-  CheckCircle2,
-  Clock,
   Edit2,
   Download,
 } from 'lucide-react';
@@ -118,7 +115,7 @@ export const TasksPage: React.FC = () => {
     return matchesSearch;
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const kanbanColumns: { status: TaskStatus; label: string; bg: string; border: string }[] = [
     { status: 'TODO', label: 'К выполнению', bg: 'bg-slate-50', border: 'border-slate-200' },

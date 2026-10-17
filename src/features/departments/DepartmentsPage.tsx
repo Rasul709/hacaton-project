@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Department, Employee } from '@/types';
+import { Department } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState, TableSkeleton } from '@/components/ui/EmptyState';
@@ -12,18 +12,14 @@ import {
   Users,
   Search,
   Edit2,
-  ChevronRight,
-  Shield,
   ArrowRight,
   Download,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/Toast';
 import { exportToCsv } from '@/lib/utils/exportCsv';
 
 export const DepartmentsPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const toast = useToast();
 
   const [search, setSearch] = useState('');

@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { LeaveTypeBadge } from '@/components/ui/Badge';
 import { formatKazakhstanDate } from '@/lib/utils';
-import { Check, X, AlertCircle } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 interface LeaveReviewModalProps {
   isOpen: boolean;

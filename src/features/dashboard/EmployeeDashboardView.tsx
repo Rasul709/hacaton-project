@@ -9,7 +9,6 @@ import { LeaveStatusBadge, LeaveTypeBadge } from '@/components/ui/Badge';
 import { LeaveRequestModal } from '@/features/leave/LeaveRequestModal';
 import { useToast } from '@/components/ui/Toast';
 import {
-  CalendarDays,
   Clock,
   Sparkles,
   GraduationCap,
@@ -21,9 +20,7 @@ import {
   Mail,
   UserCheck,
   Building,
-  CheckCircle2,
   Calendar,
-  AlertCircle,
   ExternalLink,
 } from 'lucide-react';
 
@@ -42,7 +39,7 @@ export const EmployeeDashboardView: React.FC = () => {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.leave.create(data),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myLeaveRequests'] });
       queryClient.invalidateQueries({ queryKey: ['leaveRequests'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });

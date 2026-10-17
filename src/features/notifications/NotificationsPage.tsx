@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { AppNotification } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, TableSkeleton } from '@/components/ui/EmptyState';
 import { formatKazakhstanDate } from '@/lib/utils';
@@ -12,7 +11,6 @@ import {
   CheckSquare,
   Clock,
   Info,
-  ArrowRight,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/Toast';

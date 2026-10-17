@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -54,6 +54,7 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+  const todayDateFormatted = useMemo(() => formatKazakhstanDate(new Date()), []);
 
   const { data: dashboard, isLoading, error } = useQuery({
     queryKey: ['dashboardOverview'],
@@ -154,7 +155,7 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-600">
             <span>Операционная сводка</span>
             <span>•</span>
-            <span>{formatKazakhstanDate(new Date())}</span>
+            <span>{todayDateFormatted}</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-[#101828] mt-1">
             С возвращением, {user?.firstName}! 👋
