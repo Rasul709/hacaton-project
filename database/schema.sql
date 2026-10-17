@@ -43,6 +43,7 @@ CREATE TABLE employees (
     position VARCHAR(128) NOT NULL,
     hire_date DATE NOT NULL,
     salary NUMERIC(12, 2) DEFAULT 0.00,
+    password_hash VARCHAR(255) NOT NULL DEFAULT '', -- bcrypt hash
     iin VARCHAR(12), -- ИИН РК (12 цифр)
     location VARCHAR(128) DEFAULT 'Алматы, Казахстан',
     vacation_days_total INT DEFAULT 24, -- Трудовой Кодекс РК: 24 календарных дня
@@ -152,3 +153,23 @@ CREATE INDEX idx_leave_emp ON leave_requests(employee_id);
 CREATE INDEX idx_leave_status ON leave_requests(status);
 CREATE INDEX idx_tasks_assignee ON tasks(assignee_id);
 CREATE INDEX idx_notif_user ON notifications(user_id, is_read);
+
+-- 8. AUDIT LOGS (Журнал аудита обращений к персональным данным, Закон РК № 94-V)
+CREATE TABLE audit_logs (
+    id VARCHAR(64) PRIMARY KEY,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    user_id VARCHAR(64),
+    user_email VARCHAR(255),
+    user_role VARCHAR(64),
+    action VARCHAR(128) NOT NULL,
+    resource VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(64),
+    user_agent TEXT,
+    status VARCHAR(32) DEFAULT 'SUCCESS',
+    details JSONB,
+    prev_hash VARCHAR(64),
+    hash VARCHAR(64) NOT NULL
+);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);

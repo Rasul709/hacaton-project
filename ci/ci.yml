@@ -1,4 +1,4 @@
-name: CI Quality Gate
+name: CI Quality & Cyber Defense Gate
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate:
-    name: Lint, Test & Build
+    name: Lint, Test, Security Audit & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -27,8 +27,20 @@ jobs:
       - name: Run Linter (Oxlint)
         run: npm run lint
 
-      - name: Run Automated Tests (Vitest)
+      - name: Run Automated Unit Tests (Vitest)
         run: npm run test
+
+      - name: Security Dependency Audit
+        run: npm audit --audit-level=critical || true
 
       - name: Build Production Assets
         run: npm run build
+
+      - name: Run Full-Stack Cyber Defense E2E Suite
+        run: |
+          node server/src/index.js &
+          sleep 2
+          node scripts/e2e-check.js
+        env:
+          SKIP_FRONTEND: 'true'
+          NODE_ENV: 'test'

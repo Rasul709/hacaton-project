@@ -6,11 +6,12 @@ services:
     container_name: janapost-hr-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: janapost
-      POSTGRES_PASSWORD: janapost_secret_password
-      POSTGRES_DB: janapost_hr
+      POSTGRES_USER: ${POSTGRES_USER:-janapost}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-janapost_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-janapost_hr}
     ports:
-      - "5432:5432"
+      # Bind exclusively to 127.0.0.1 loopback to prevent external exposure
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
@@ -29,12 +30,13 @@ services:
     container_name: janapost-hr-backend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # Bind exclusively to 127.0.0.1 loopback; production ingress handled via Nginx
+      - "127.0.0.1:3000:3000"
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://janapost:janapost_secret_password@postgres:5432/janapost_hr
-      - JWT_SECRET=janapost-hackathon-2026-secret-key-almaty
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-janapost}:${POSTGRES_PASSWORD:-janapost_secret_password}@postgres:5432/${POSTGRES_DB:-janapost_hr}
+      - JWT_SECRET=${JWT_SECRET:-janapost-hackathon-2026-secret-key-almaty}
     volumes:
       - ./server/uploads:/app/server/uploads
     depends_on:
@@ -58,7 +60,6 @@ services:
 
 volumes:
   pgdata:
-    driver: local
 
 networks:
   hr-network:

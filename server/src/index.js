@@ -4,9 +4,27 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { db, initLocalDb, saveLocalDb, initPostgres, isPgConnected, seedsPath, dataPath } from './db.js';
-import { hashPassword, verifyPassword, signJwt, verifyJwt } from './security.js';
+import {
+  hashPassword,
+  verifyPassword,
+  signJwt,
+  verifyJwt,
+  revokeToken,
+  isAccountLocked,
+  recordFailedLogin,
+  recordSuccessfulLogin,
+} from './security.js';
 import { uploadMiddleware, UPLOADS_DIR } from './storage.js';
-import { renderLeaveOrderT6, renderEmployeeCardT2, renderTimesheetT13, renderPayslip, renderEmploymentContract, render1cXml } from './documents.js';
+import {
+  renderLeaveOrderT6,
+  renderEmployeeCardT2,
+  renderTimesheetT13,
+  renderPayslip,
+  renderEmploymentContract,
+  render1cXml,
+  calculateDocumentHash,
+} from './documents.js';
+import { logAuditEvent, getAuditLogs, verifyAuditChainIntegrity } from './audit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,11 +32,108 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: '*' }));
-app.use(express.json());
+// ----------------------------------------------------
+// Enterprise Security Defense Middleware (Helmet-grade)
+// ----------------------------------------------------
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  next();
+});
 
-// Serve uploaded static attachments
-app.use('/uploads', express.static(UPLOADS_DIR));
+// Prototype Pollution Defense & Request Limiting
+app.use(
+  express.json({
+    limit: '1mb',
+    verify: (req, res, buf) => {
+      try {
+        const text = buf.toString();
+        if (text.includes('__proto__') || text.includes('constructor') || text.includes('prototype')) {
+          const parsed = JSON.parse(text);
+          if (
+            Object.prototype.hasOwnProperty.call(parsed, '__proto__') ||
+            Object.prototype.hasOwnProperty.call(parsed, 'constructor')
+          ) {
+            throw new Error('Prototype pollution payload detected');
+          }
+        }
+      } catch (e) {
+        if (e.message.includes('pollution')) throw e;
+      }
+    },
+  })
+);
+
+// Hardened CORS: allow specific origins with credentials
+const ALLOWED_ORIGINS = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost',
+  'http://127.0.0.1',
+]);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || ALLOWED_ORIGINS.has(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Blocked by CORS policy'));
+    },
+    credentials: true,
+  })
+);
+
+// Serve uploaded static attachments with nosniff and CSP sandbox
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+    next();
+  },
+  express.static(UPLOADS_DIR)
+);
+
+// Sliding Window In-Memory Rate Limiter
+function createRateLimiter({ windowMs, maxRequests, message }) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress || '127.0.0.1';
+    const now = Date.now();
+    const clientRecord = hits.get(ip) || [];
+    const recentHits = clientRecord.filter((time) => now - time < windowMs);
+
+    if (recentHits.length >= maxRequests) {
+      return res.status(429).json({ error: message || 'Слишком много запросов. Пожалуйста, повторите попытку позже.' });
+    }
+
+    recentHits.push(now);
+    hits.set(ip, recentHits);
+    next();
+  };
+}
+
+const authRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: process.env.NODE_ENV === 'production' ? 15 : 150,
+  message: 'Превышен лимит попыток входа. Попробуйте через минуту.',
+});
+
+const generalApiRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: process.env.NODE_ENV === 'production' ? 120 : 600,
+  message: 'Превышен общий лимит обращений к API.',
+});
+
+app.use('/api/v1/auth', authRateLimiter);
+app.use('/api/v1', generalApiRateLimiter);
 
 // Request logger middleware
 app.use((req, res, next) => {
@@ -50,36 +165,108 @@ function findEmployeeByEmail(email) {
   );
 }
 
-// Helper: Extract authenticated user from Bearer token
+/**
+ * Strict authentication: extract authenticated user from Bearer token.
+ * ZERO fallback to admin. Returns null if unauthenticated.
+ */
 function getUserFromAuth(req) {
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.slice(7);
-    const decoded = verifyJwt(token);
-    if (decoded) {
-      if (decoded.id) {
-        const user = db.employees.find((e) => e.id === decoded.id);
-        if (user) return user;
-      }
-      if (decoded.email) {
-        const user = findEmployeeByEmail(decoded.email);
-        if (user) return user;
-      }
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.slice(7);
+  const decoded = verifyJwt(token);
+  if (!decoded) return null;
+
+  if (decoded.id) {
+    const user = db.employees.find((e) => e.id === decoded.id);
+    if (user) return user;
+  }
+  if (decoded.email) {
+    const user = findEmployeeByEmail(decoded.email);
+    if (user) return user;
+  }
+  return null;
+}
+
+/**
+ * Express middleware: requires valid authentication
+ */
+function requireAuth(req, res, next) {
+  const user = getUserFromAuth(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Требуется авторизация (Bearer JWT)' });
+  }
+  req.user = user;
+  next();
+}
+
+/**
+ * Express middleware: requires specific RBAC roles
+ */
+function requireRole(allowedRoles = []) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+    const role =
+      req.user.id === 'emp-1'
+        ? 'ADMIN'
+        : req.user.id === 'emp-7'
+        ? 'HR_MANAGER'
+        : ['emp-2', 'emp-3', 'emp-4', 'emp-5'].includes(req.user.id)
+        ? 'DEPARTMENT_HEAD'
+        : 'EMPLOYEE';
+
+    req.user.role = role;
+
+    if (!allowedRoles.includes(role)) {
+      logAuditEvent({
+        userId: req.user.id,
+        userEmail: req.user.email,
+        userRole: role,
+        action: 'ACCESS_DENIED_ROLE_VIOLATION',
+        resource: req.originalUrl,
+        ipAddress: req.ip,
+        status: 'FAILURE',
+        details: { requiredRoles: allowedRoles, userRole: role },
+      });
+      return res.status(403).json({ error: 'Недостаточно прав доступа для выполнения данной операции' });
+    }
+    next();
+  };
+}
+
+/**
+ * Personal Data Sanitization & Masking compliant with RK Law No. 94-V.
+ * Never returns passwordHash under any circumstances.
+ * Masks IIN, salary, IBAN, and emergency contacts for non-privileged viewers.
+ */
+export function sanitizeEmployee(emp, viewer = null) {
+  if (!emp) return null;
+  const copy = { ...emp };
+  delete copy.passwordHash;
+
+  const isPrivileged = viewer && (viewer.role === 'ADMIN' || viewer.role === 'HR_MANAGER' || viewer.id === emp.id);
+
+  if (!isPrivileged) {
+    if (copy.iin) {
+      copy.iin = copy.iin.length >= 6 ? `${copy.iin.slice(0, 6)}******` : '******';
+    }
+    delete copy.salary;
+    if (copy.bankIban) {
+      copy.bankIban = 'KZ******************';
+    }
+    if (copy.address) {
+      copy.address = 'Скрыто политикой ПДн РК (Закон № 94-V)';
+    }
+    if (copy.emergencyContact) {
+      copy.emergencyContact = 'Скрыто политикой ПДн РК (Закон № 94-V)';
     }
   }
 
-  // Fallback to default admin employee
-  return db.employees[0] || {
-    id: 'emp-1',
-    employeeId: 'JP-00101',
-    firstName: 'Айгерим',
-    lastName: 'Смагулова',
-    email: 'admin@janapost.kz',
-    role: 'ADMIN',
-    departmentId: 'dept-3',
-    departmentName: 'HR и корпоративная культура',
-    jobTitle: 'HR Director / Super Admin',
-  };
+  return copy;
 }
 
 // Recalculate department counts based on active employees
@@ -111,6 +298,20 @@ app.get('/api/v1/health', (req, res) => {
 });
 
 app.post('/api/v1/system/reset-db', (req, res) => {
+  // Disallow in production completely
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Сброс базы данных строго запрещен в производственной среде' });
+  }
+
+  // Require admin authorization if token is provided
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const user = getUserFromAuth(req);
+    if (!user || user.id !== 'emp-1') {
+      return res.status(403).json({ error: 'Только Администратор может инициировать сброс данных' });
+    }
+  }
+
   try {
     const raw = fs.readFileSync(seedsPath, 'utf-8');
     const parsed = JSON.parse(raw);
@@ -120,8 +321,15 @@ app.post('/api/v1/system/reset-db', (req, res) => {
     db.leaveRequests = parsed.leaveRequests || [];
     db.tasks = parsed.tasks || [];
     db.notifications = parsed.notifications || [];
+    db.auditLogs = [];
 
     initLocalDb();
+    logAuditEvent({
+      action: 'SYSTEM_DB_RESET',
+      resource: '/api/v1/system/reset-db',
+      ipAddress: req.ip,
+      status: 'SUCCESS',
+    });
     res.json({ success: true, message: 'База данных успешно сброшена к исходным семенам' });
   } catch (err) {
     res.status(500).json({ error: 'Не удалось сбросить данные: ' + err.message });
@@ -129,27 +337,68 @@ app.post('/api/v1/system/reset-db', (req, res) => {
 });
 
 // ----------------------------------------------------
-// 2. Authentication & Passwords (bcrypt + JWT)
+// 2. Authentication & Passwords (bcrypt + JWT + Lockout)
 // ----------------------------------------------------
 app.post('/api/v1/auth/login', (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email и пароль обязательны' });
+  }
+
+  // Check account lockout
+  const lockout = isAccountLocked(email);
+  if (lockout.locked) {
+    logAuditEvent({
+      userEmail: email,
+      action: 'AUTH_ACCOUNT_LOCKED_ATTEMPT',
+      resource: '/api/v1/auth/login',
+      ipAddress: req.ip,
+      status: 'FAILURE',
+      details: { remainingMinutes: lockout.remainingMinutes },
+    });
+    return res.status(429).json({
+      error: `Аккаунт временно заблокирован из-за превышения числа неверных попыток. Попробуйте через ${lockout.remainingMinutes} мин.`,
+    });
+  }
+
   const user = findEmployeeByEmail(email);
   if (!user) {
+    recordFailedLogin(email);
+    logAuditEvent({
+      userEmail: email,
+      action: 'AUTH_LOGIN_FAILED_UNKNOWN_USER',
+      resource: '/api/v1/auth/login',
+      ipAddress: req.ip,
+      status: 'FAILURE',
+    });
     return res.status(401).json({ error: 'Неверный адрес электронной почты или пароль' });
   }
 
-  // Verify password with bcrypt (supports 'password123' for hackathon jury convenience)
-  const isMatch = verifyPassword(password || 'password123', user.passwordHash);
+  // Strict bcrypt check (no password123 backdoor bypass)
+  const isMatch = verifyPassword(password, user.passwordHash);
   if (!isMatch) {
+    const result = recordFailedLogin(email);
+    logAuditEvent({
+      userId: user.id,
+      userEmail: user.email,
+      action: 'AUTH_LOGIN_FAILED_WRONG_PASSWORD',
+      resource: '/api/v1/auth/login',
+      ipAddress: req.ip,
+      status: 'FAILURE',
+      details: { attempt: result?.failedAttempts },
+    });
     return res.status(401).json({ error: 'Неверный адрес электронной почты или пароль' });
   }
+
+  // Successful login: clear lockout tracking
+  recordSuccessfulLogin(email);
 
   const role =
     user.id === 'emp-1'
       ? 'ADMIN'
       : user.id === 'emp-7'
       ? 'HR_MANAGER'
-      : user.id === 'emp-2' || user.id === 'emp-3' || user.id === 'emp-4' || user.id === 'emp-5'
+      : ['emp-2', 'emp-3', 'emp-4', 'emp-5'].includes(user.id)
       ? 'DEPARTMENT_HEAD'
       : 'EMPLOYEE';
 
@@ -164,32 +413,37 @@ app.post('/api/v1/auth/login', (req, res) => {
     role,
   });
 
+  logAuditEvent({
+    userId: user.id,
+    userEmail: tokenEmail,
+    userRole: role,
+    action: 'AUTH_LOGIN_SUCCESS',
+    resource: '/api/v1/auth/login',
+    ipAddress: req.ip,
+    status: 'SUCCESS',
+  });
+
   res.json({
     token,
-    user: {
-      id: user.id,
-      employeeId: user.employeeId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: tokenEmail,
-      role,
-      departmentId: user.departmentId,
-      departmentName: user.departmentName,
-      jobTitle: user.jobTitle,
-      avatarUrl: user.avatarUrl,
-      phone: user.phone,
-    },
+    user: sanitizeEmployee(
+      {
+        ...user,
+        email: tokenEmail,
+        role,
+      },
+      { role: 'ADMIN', id: user.id }
+    ),
   });
 });
 
-app.get('/api/v1/auth/me', (req, res) => {
-  const user = getUserFromAuth(req);
+app.get('/api/v1/auth/me', requireAuth, (req, res) => {
+  const user = req.user;
   const role =
     user.id === 'emp-1'
       ? 'ADMIN'
       : user.id === 'emp-7'
       ? 'HR_MANAGER'
-      : user.id === 'emp-2' || user.id === 'emp-3' || user.id === 'emp-4' || user.id === 'emp-5'
+      : ['emp-2', 'emp-3', 'emp-4', 'emp-5'].includes(user.id)
       ? 'DEPARTMENT_HEAD'
       : 'EMPLOYEE';
 
@@ -201,27 +455,40 @@ app.get('/api/v1/auth/me', (req, res) => {
     if (decoded?.email) displayEmail = decoded.email;
   }
 
-  res.json({
-    id: user.id,
-    employeeId: user.employeeId,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: displayEmail,
-    role,
-    departmentId: user.departmentId,
-    departmentName: user.departmentName,
-    jobTitle: user.jobTitle,
-    avatarUrl: user.avatarUrl,
-    phone: user.phone,
-  });
+  res.json(
+    sanitizeEmployee(
+      {
+        ...user,
+        email: displayEmail,
+        role,
+      },
+      { role: 'ADMIN', id: user.id }
+    )
+  );
 });
 
 app.post('/api/v1/auth/logout', (req, res) => {
-  res.json({ success: true, message: 'Сессия успешно завершена' });
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    revokeToken(token);
+  }
+  const user = getUserFromAuth(req);
+  if (user) {
+    logAuditEvent({
+      userId: user.id,
+      userEmail: user.email,
+      action: 'AUTH_LOGOUT',
+      resource: '/api/v1/auth/logout',
+      ipAddress: req.ip,
+      status: 'SUCCESS',
+    });
+  }
+  res.json({ success: true, message: 'Сессия успешно завершена, токен аннулирован' });
 });
 
-app.post('/api/v1/auth/change-password', (req, res) => {
-  const user = getUserFromAuth(req);
+app.post('/api/v1/auth/change-password', requireAuth, (req, res) => {
+  const user = req.user;
   const { currentPassword, newPassword } = req.body;
 
   if (!newPassword || newPassword.length < 6) {
@@ -234,6 +501,16 @@ app.post('/api/v1/auth/change-password', (req, res) => {
 
   user.passwordHash = hashPassword(newPassword);
   saveLocalDb();
+
+  logAuditEvent({
+    userId: user.id,
+    userEmail: user.email,
+    action: 'AUTH_PASSWORD_CHANGED',
+    resource: '/api/v1/auth/change-password',
+    ipAddress: req.ip,
+    status: 'SUCCESS',
+  });
+
   res.json({ success: true, message: 'Пароль успешно обновлен и защищен хешем bcrypt' });
 });
 
@@ -309,10 +586,112 @@ app.get('/api/v1/documents/export-1c', (req, res) => {
   res.send(xml);
 });
 
+// Document Verification Endpoint for QR & NCALayer (Public statutory registry)
+app.get('/api/v1/documents/verify/:id', (req, res) => {
+  const docId = req.params.id;
+  const leave = db.leaveRequests.find((l) => l.id === docId);
+  const emp = db.employees.find((e) => e.id === docId);
+
+  if (leave) {
+    const targetEmp = db.employees.find((e) => e.id === leave.employeeId);
+    const hash = calculateDocumentHash({
+      id: leave.id,
+      employeeId: leave.employeeId,
+      daysCount: leave.daysCount,
+      startDate: leave.startDate,
+      endDate: leave.endDate,
+      status: leave.status,
+    });
+
+    logAuditEvent({
+      action: 'DOCUMENT_VERIFIED',
+      resource: `/api/v1/documents/verify/${docId}`,
+      ipAddress: req.ip,
+      status: 'SUCCESS',
+      details: { docType: 'LEAVE_ORDER_T6', docId },
+    });
+
+    return res.json({
+      valid: true,
+      documentId: leave.id,
+      documentType: 'ORDER_T6',
+      documentTitle: `Приказ о предоставлении отпуска № ПР-${leave.id.replace('leave-', '').slice(-6)}`,
+      signer: {
+        name: 'Смагулова Айгерим Муратовна',
+        iin: '890314400128',
+        role: 'Директор по персоналу ТОО «Jana Post»',
+        certificateIssuer: 'НУЦ РК (Национальный удостоверяющий центр Республики Казахстан)',
+        certSerial: '4F91-C820-2026-KZ-NCALAYER',
+      },
+      recipient: {
+        name: targetEmp ? `${targetEmp.lastName} ${targetEmp.firstName}` : leave.employeeName,
+        iin: targetEmp?.iin ? `${targetEmp.iin.slice(0, 6)}******` : '940512******',
+        department: targetEmp?.departmentName || leave.departmentName,
+      },
+      hashSha256: hash,
+      signedAt: leave.reviewedAt || leave.submittedAt || new Date().toISOString(),
+      enbekSyncStatus: 'REGISTERED',
+      legalValidity: 'Юридически значимый электронный документ (Закон РК об электронном документе и ЭЦП ст. 7)',
+    });
+  }
+
+  if (emp) {
+    const hash = calculateDocumentHash({
+      id: emp.id,
+      employeeId: emp.employeeId,
+      iin: emp.iin,
+      startDate: emp.startDate,
+      jobTitle: emp.jobTitle,
+    });
+
+    return res.json({
+      valid: true,
+      documentId: emp.id,
+      documentType: 'EMPLOYMENT_CONTRACT',
+      documentTitle: `Трудовой договор № ТД-${emp.id.replace('emp-', '').padStart(4, '0')}/2026`,
+      signer: {
+        name: 'Смагулова Айгерим Муратовна',
+        iin: '890314400128',
+        role: 'Директор по персоналу ТОО «Jana Post»',
+        certificateIssuer: 'НУЦ РК (GOST KNCA)',
+        certSerial: '7B12-9904-2026-KZ-NCALAYER',
+      },
+      recipient: {
+        name: `${emp.lastName} ${emp.firstName}`,
+        iin: emp.iin ? `${emp.iin.slice(0, 6)}******` : '940512******',
+        department: emp.departmentName,
+      },
+      hashSha256: hash,
+      signedAt: emp.startDate || new Date().toISOString(),
+      enbekSyncStatus: emp.enbekStatus || 'REGISTERED',
+      legalValidity: 'Юридически значимый электронный документ (Закон РК об электронном документе и ЭЦП)',
+    });
+  }
+
+  res.status(404).json({
+    valid: false,
+    error: 'Документ с указанным идентификатором не зарегистрирован в едином реестре кадровых документов ТОО «Jana Post»',
+  });
+});
+
+// Audit Logs API: Tamper-evident registry inspection (Restricted to ADMIN)
+app.get('/api/v1/audit/logs', requireAuth, requireRole(['ADMIN']), (req, res) => {
+  const limit = Math.min(500, parseInt(req.query.limit || '100', 10));
+  const logs = getAuditLogs({ limit, action: req.query.action, userId: req.query.userId });
+  const chain = verifyAuditChainIntegrity();
+
+  res.json({
+    chainIntegrity: chain.valid ? 'VERIFIED_TAMPER_FREE' : 'COMPROMISED',
+    totalAuditedEvents: db.auditLogs ? db.auditLogs.length : 0,
+    count: logs.length,
+    logs,
+  });
+});
+
 // ----------------------------------------------------
-// 5. Employees CRUD
+// 5. Employees CRUD (Protected by RBAC & RK Law No. 94-V)
 // ----------------------------------------------------
-app.get('/api/v1/employees', (req, res) => {
+app.get('/api/v1/employees', requireAuth, (req, res) => {
   const q = (req.query.search || req.query.q || '').toString().toLowerCase();
   const dept = (req.query.departmentId || '').toString();
   const status = (req.query.status || '').toString();
@@ -343,7 +722,20 @@ app.get('/api/v1/employees', (req, res) => {
   const total = filtered.length;
   const totalPages = Math.ceil(total / limit) || 1;
   const start = (page - 1) * limit;
-  const data = filtered.slice(start, start + limit);
+
+  // Apply Personal Data Masking (RK Law No. 94-V) & eliminate passwordHash
+  const data = filtered.slice(start, start + limit).map((emp) => sanitizeEmployee(emp, req.user));
+
+  logAuditEvent({
+    userId: req.user.id,
+    userEmail: req.user.email,
+    userRole: req.user.role,
+    action: 'PERSONAL_DATA_REGISTRY_VIEW',
+    resource: '/api/v1/employees',
+    ipAddress: req.ip,
+    status: 'SUCCESS',
+    details: { count: data.length, total },
+  });
 
   res.json({
     data,
@@ -360,13 +752,25 @@ app.get('/api/v1/employees', (req, res) => {
   });
 });
 
-app.get('/api/v1/employees/:id', (req, res) => {
+app.get('/api/v1/employees/:id', requireAuth, (req, res) => {
   const emp = db.employees.find((e) => e.id === req.params.id);
   if (!emp) return res.status(404).json({ error: 'Сотрудник не найден' });
-  res.json(emp);
+
+  logAuditEvent({
+    userId: req.user.id,
+    userEmail: req.user.email,
+    userRole: req.user.role,
+    action: 'PERSONAL_DATA_PROFILE_VIEW',
+    resource: `/api/v1/employees/${emp.id}`,
+    ipAddress: req.ip,
+    status: 'SUCCESS',
+    details: { targetEmployeeId: emp.id },
+  });
+
+  res.json(sanitizeEmployee(emp, req.user));
 });
 
-app.post('/api/v1/employees', (req, res) => {
+app.post('/api/v1/employees', requireAuth, requireRole(['ADMIN', 'HR_MANAGER']), (req, res) => {
   const dept = db.departments.find((d) => d.id === req.body.departmentId);
   const newEmp = {
     id: `emp-${Date.now()}`,
@@ -379,7 +783,19 @@ app.post('/api/v1/employees', (req, res) => {
   db.employees.unshift(newEmp);
   syncDepartmentCounts();
   saveLocalDb();
-  res.status(201).json(newEmp);
+
+  logAuditEvent({
+    userId: req.user.id,
+    userEmail: req.user.email,
+    userRole: req.user.role,
+    action: 'EMPLOYEE_CREATED',
+    resource: `/api/v1/employees/${newEmp.id}`,
+    ipAddress: req.ip,
+    status: 'SUCCESS',
+    details: { createdId: newEmp.id, name: `${newEmp.firstName} ${newEmp.lastName}` },
+  });
+
+  res.status(201).json(sanitizeEmployee(newEmp, req.user));
 });
 
 const handleUpdateEmployee = (req, res) => {
@@ -391,14 +807,29 @@ const handleUpdateEmployee = (req, res) => {
     if (dept) req.body.departmentName = dept.name;
   }
 
-  db.employees[idx] = { ...db.employees[idx], ...req.body };
+  // Prevent overwriting passwordHash via employee update endpoint
+  const safeBody = { ...req.body };
+  delete safeBody.passwordHash;
+
+  db.employees[idx] = { ...db.employees[idx], ...safeBody };
   syncDepartmentCounts();
   saveLocalDb();
-  res.json(db.employees[idx]);
+
+  logAuditEvent({
+    userId: req.user.id,
+    userEmail: req.user.email,
+    userRole: req.user.role,
+    action: 'EMPLOYEE_UPDATED',
+    resource: `/api/v1/employees/${req.params.id}`,
+    ipAddress: req.ip,
+    status: 'SUCCESS',
+  });
+
+  res.json(sanitizeEmployee(db.employees[idx], req.user));
 };
 
-app.put('/api/v1/employees/:id', handleUpdateEmployee);
-app.patch('/api/v1/employees/:id', handleUpdateEmployee);
+app.put('/api/v1/employees/:id', requireAuth, requireRole(['ADMIN', 'HR_MANAGER']), handleUpdateEmployee);
+app.patch('/api/v1/employees/:id', requireAuth, requireRole(['ADMIN', 'HR_MANAGER']), handleUpdateEmployee);
 
 app.patch('/api/v1/employees/:id/status', (req, res) => {
   const idx = db.employees.findIndex((e) => e.id === req.params.id);

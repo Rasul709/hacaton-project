@@ -1,14 +1,52 @@
+import crypto from 'crypto';
+
+/**
+ * Neutralize Stored XSS vectors by encoding HTML control characters
+ */
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Neutralize XML Injection / XXE attacks in 1C export
+ */
+export function escapeXml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Cryptographic document SHA-256 fingerprint calculation for NCALayer / Digital Signature
+ */
+export function calculateDocumentHash(docData) {
+  if (!docData) return '0000000000000000000000000000000000000000000000000000000000000000';
+  const canonical = JSON.stringify(docData, Object.keys(docData).sort());
+  return crypto.createHash('sha256').update(canonical).digest('hex');
+}
+
 /**
  * Kazakhstan Labor Code (ТК РК) Statutory HR Document Templates
  * Standard Forms: T-6 (Приказ об отпуске), T-2 (Личная карточка), T-13 (Табель учета времени)
  */
 
 export function renderLeaveOrderT6(leave, employee) {
-  const empName = employee ? `${employee.lastName} ${employee.firstName}` : leave.employeeName;
-  const deptName = employee?.departmentName || leave.departmentName || 'Отдел логистики';
-  const posName = employee?.jobTitle || 'Сотрудник сети Jana Post';
-  const iin = employee?.iin || '940512300412';
-  const orderNum = `ПР-${leave.id.replace('leave-', '').slice(-6)}`;
+  const empRaw = employee ? `${employee.lastName} ${employee.firstName}` : leave.employeeName;
+  const empName = escapeHtml(empRaw);
+  const deptName = escapeHtml(employee?.departmentName || leave.departmentName || 'Отдел логистики');
+  const posName = escapeHtml(employee?.jobTitle || 'Сотрудник сети Jana Post');
+  const iin = escapeHtml(employee?.iin || '940512300412');
+  const orderNum = escapeHtml(`ПР-${leave.id.replace('leave-', '').slice(-6)}`);
   const orderDate = new Date().toLocaleDateString('ru-RU');
 
   return `<!DOCTYPE html>
@@ -133,8 +171,17 @@ export function renderLeaveOrderT6(leave, employee) {
 }
 
 export function renderEmployeeCardT2(employee) {
-  const empName = `${employee.lastName} ${employee.firstName}`;
+  const empName = escapeHtml(`${employee.lastName} ${employee.firstName}`);
   const orderDate = new Date().toLocaleDateString('ru-RU');
+  const employeeId = escapeHtml(employee.employeeId || 'JP-00101');
+  const iin = escapeHtml(employee.iin || '940512300412');
+  const email = escapeHtml(employee.email || '');
+  const phone = escapeHtml(employee.phone || '+7 (777) 000-00-00');
+  const dept = escapeHtml(employee.departmentName || 'Логистика');
+  const job = escapeHtml(employee.jobTitle || '');
+  const start = escapeHtml(employee.startDate || '2023-01-15');
+  const address = escapeHtml(employee.address || 'г. Алматы, Казахстан');
+  const emergency = escapeHtml(employee.emergencyContact || 'Супруг(а) / Родители');
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -164,9 +211,9 @@ export function renderEmployeeCardT2(employee) {
   <table>
     <tr>
       <th style="width: 25%;">Табельный номер:</th>
-      <td style="width: 25%; font-weight: bold;">${employee.employeeId || 'JP-00101'}</td>
+      <td style="width: 25%; font-weight: bold;">${employeeId}</td>
       <th style="width: 25%;">ИИН (РК):</th>
-      <td style="width: 25%;">${employee.iin || '940512300412'}</td>
+      <td style="width: 25%;">${iin}</td>
     </tr>
     <tr>
       <th>Ф.И.О.:</th>
@@ -174,19 +221,19 @@ export function renderEmployeeCardT2(employee) {
     </tr>
     <tr>
       <th>Электронная почта:</th>
-      <td>${employee.email}</td>
+      <td>${email}</td>
       <th>Телефон:</th>
-      <td>${employee.phone || '+7 (777) 000-00-00'}</td>
+      <td>${phone}</td>
     </tr>
     <tr>
       <th>Подразделение:</th>
-      <td>${employee.departmentName || 'Логистика'}</td>
+      <td>${dept}</td>
       <th>Должность:</th>
-      <td>${employee.jobTitle}</td>
+      <td>${job}</td>
     </tr>
     <tr>
       <th>Дата приема на работу:</th>
-      <td>${employee.startDate || '2023-01-15'}</td>
+      <td>${start}</td>
       <th>Статус занятости:</th>
       <td>${employee.status === 'ACTIVE' ? 'Работает (Штат)' : 'Неактивен'}</td>
     </tr>
@@ -194,7 +241,7 @@ export function renderEmployeeCardT2(employee) {
       <th>Норма отпуска (ТК РК):</th>
       <td><strong>24 календарных дня</strong></td>
       <th>Место жительства:</th>
-      <td>${employee.address || 'г. Алматы, Казахстан'}</td>
+      <td>${address}</td>
     </tr>
   </table>
 
@@ -210,7 +257,7 @@ export function renderEmployeeCardT2(employee) {
     </tr>
     <tr>
       <th>Экстренный контакт:</th>
-      <td>${employee.emergencyContact || 'Супруг(а) / Родители'}</td>
+      <td>${emergency}</td>
     </tr>
   </table>
 
@@ -223,17 +270,20 @@ export function renderEmployeeCardT2(employee) {
 }
 
 export function renderTimesheetT13(attendanceList, employees) {
-  const curMonth = new Date().toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+  const curMonth = escapeHtml(new Date().toLocaleString('ru-RU', { month: 'long', year: 'numeric' }));
 
   const rowsHtml = employees.slice(0, 15).map((emp, idx) => {
     const empAtt = attendanceList.filter((a) => a.employeeId === emp.id);
     const presentDays = empAtt.filter((a) => a.status === 'PRESENT' || a.status === 'LATE').length || 20;
     const hours = presentDays * 8;
+    const name = escapeHtml(`${emp.lastName} ${emp.firstName}`);
+    const empId = escapeHtml(emp.employeeId || emp.id);
+    const job = escapeHtml(emp.jobTitle || '');
     return `<tr>
       <td style="text-align: center;">${idx + 1}</td>
-      <td><strong>${emp.lastName} ${emp.firstName}</strong></td>
-      <td>${emp.employeeId}</td>
-      <td>${emp.jobTitle}</td>
+      <td><strong>${name}</strong></td>
+      <td>${empId}</td>
+      <td>${job}</td>
       <td style="text-align: center;">Я / 8</td>
       <td style="text-align: center;">Я / 8</td>
       <td style="text-align: center;">Я / 8</td>
@@ -301,12 +351,13 @@ export function renderTimesheetT13(attendanceList, employees) {
 }
 
 export function renderPayslip(employee, monthStr = 'Октябрь 2026 г.') {
-  const empName = `${employee.lastName} ${employee.firstName}`;
+  const empName = escapeHtml(`${employee.lastName} ${employee.firstName}`);
   const gross = employee.salary || 350000;
-  const iin = employee.iin || '940512300412';
-  const tabNum = `JP-${employee.id.replace('emp-', '').padStart(4, '0')}`;
-  const dept = employee.departmentName || 'Отдел логистики';
-  const pos = employee.jobTitle || 'Специалист';
+  const iin = escapeHtml(employee.iin || '940512300412');
+  const tabNum = escapeHtml(`JP-${employee.id.replace('emp-', '').padStart(4, '0')}`);
+  const dept = escapeHtml(employee.departmentName || 'Отдел логистики');
+  const pos = escapeHtml(employee.jobTitle || 'Специалист');
+  const safeMonth = escapeHtml(monthStr);
 
   // Calculations per Tax Code & Labor Code of RK
   const opv = Math.round(gross * 0.10);
@@ -351,10 +402,10 @@ export function renderPayslip(employee, monthStr = 'Октябрь 2026 г.') {
 
   <div class="header">
     <div class="company">ТОО «Jana Post Logistics»</div>
-    <div class="sub">БИН: 210840032190 | г. Алматы, пр. Аль-Фараби 77/7, БЦ «Esentai» | Расчетный период: ${monthStr}</div>
+    <div class="sub">БИН: 210840032190 | г. Алматы, пр. Аль-Фараби 77/7, БЦ «Esentai» | Расчетный период: ${safeMonth}</div>
   </div>
 
-  <div class="doc-title">РАСЧЕТНЫЙ ЛИСТОК ЗА ${monthStr.toUpperCase()}</div>
+  <div class="doc-title">РАСЧЕТНЫЙ ЛИСТОК ЗА ${safeMonth.toUpperCase()}</div>
   <p style="text-align: center; font-size: 11px; color: #64748b; margin-top: 0;">(в соответствии со статьей 113 Трудового кодекса Республики Казахстан)</p>
 
   <div class="meta-box">
@@ -477,14 +528,14 @@ export function renderPayslip(employee, monthStr = 'Октябрь 2026 г.') {
 }
 
 export function renderEmploymentContract(employee) {
-  const empName = `${employee.lastName} ${employee.firstName}`;
-  const iin = employee.iin || '940512300412';
-  const pos = employee.jobTitle || 'Специалист логистической сети';
-  const dept = employee.departmentName || 'Департамент логистики и доставки';
-  const contractNum = employee.contractNumber || `ТД-${employee.id.replace('emp-', '').padStart(4, '0')}/2026`;
-  const contractDate = employee.startDate || '2026-01-15';
-  const salary = (employee.salary || 350000).toLocaleString('ru-RU');
-  const esutdId = employee.enbekContractId || `ESUTD-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+  const empName = escapeHtml(`${employee.lastName} ${employee.firstName}`);
+  const iin = escapeHtml(employee.iin || '940512300412');
+  const pos = escapeHtml(employee.jobTitle || 'Специалист логистической сети');
+  const dept = escapeHtml(employee.departmentName || 'Департамент логистики и доставки');
+  const contractNum = escapeHtml(employee.contractNumber || `ТД-${employee.id.replace('emp-', '').padStart(4, '0')}/2026`);
+  const contractDate = escapeHtml(employee.startDate || '2026-01-15');
+  const salary = escapeHtml((employee.salary || 350000).toLocaleString('ru-RU'));
+  const esutdId = escapeHtml(employee.enbekContractId || `ESUTD-2026-${Math.floor(10000 + Math.random() * 90000)}`);
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -603,12 +654,18 @@ export function render1cXml(attendance = [], employees = []) {
       const ipn = Math.round(taxableBase * 0.1);
       const net = gross - opv - vosms - ipn;
 
+      const safeId = escapeXml(emp.employeeId || emp.id);
+      const safeName = escapeXml(`${emp.lastName} ${emp.firstName}`);
+      const safeIin = escapeXml(emp.iin || '940512300412');
+      const safeJob = escapeXml(emp.jobTitle || '');
+      const safeDept = escapeXml(emp.departmentName || 'Отдел логистики');
+
       return `    <Сотрудник>
-      <ТабельныйНомер>${emp.employeeId || emp.id}</ТабельныйНомер>
-      <ФИО>${emp.lastName} ${emp.firstName}</ФИО>
-      <ИИН>${emp.iin || '940512300412'}</ИИН>
-      <Должность>${emp.jobTitle}</Должность>
-      <Подразделение>${emp.departmentName || 'Отдел логистики'}</Подразделение>
+      <ТабельныйНомер>${safeId}</ТабельныйНомер>
+      <ФИО>${safeName}</ФИО>
+      <ИИН>${safeIin}</ИИН>
+      <Должность>${safeJob}</Должность>
+      <Подразделение>${safeDept}</Подразделение>
       <ОтработаноДней>22</ОтработаноДней>
       <ОтработаноЧасов>176</ОтработаноЧасов>
       <НачисленоОклад>${gross}</НачисленоОклад>
