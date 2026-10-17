@@ -21,6 +21,7 @@ import {
   Printer,
   MapPin,
   Navigation,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { exportToCsv } from '@/lib/utils/exportCsv';
@@ -205,6 +206,15 @@ export const AttendancePage: React.FC = () => {
             disabled={records.length === 0}
           >
             Экспорт табеля (Т-13)
+          </Button>
+          <Button
+            variant="outline"
+            leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600" />}
+            onClick={() => window.open(api.documents.get1cExportUrl(), '_blank')}
+            title="Выгрузка проводок для 1С:ЗУП 8.3 Казахстан"
+            className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-200"
+          >
+            1С:ЗУП (XML)
           </Button>
         </div>
       </div>

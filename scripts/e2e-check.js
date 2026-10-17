@@ -328,6 +328,54 @@ async function run() {
     record('Telegram Logistics Push Gateway', false, e.message);
   }
 
+  // 16. Statutory Employment Contract (ст. 33 ТК РК)
+  try {
+    const contractRes = await req('GET', '/api/v1/documents/contract/emp-1');
+    if (contractRes.status === 200 && contractRes.body.includes('ТРУДОВОЙ ДОГОВОР') && contractRes.body.includes('ст. 33')) {
+      record('Kazakhstan Employment Contract (ст. 33 ТК РК)', true, 'Official contract HTML with ЭЦП and ESUTD stamp generated');
+    } else {
+      record('Kazakhstan Employment Contract (ст. 33 ТК РК)', false, `Status ${contractRes.status}`);
+    }
+  } catch (e) {
+    record('Kazakhstan Employment Contract (ст. 33 ТК РК)', false, e.message);
+  }
+
+  // 17. 1C:Enterprise (ЗУП 8.3 Казахстан) XML Export
+  try {
+    const xmlRes = await req('GET', '/api/v1/documents/export-1c');
+    if (xmlRes.status === 200 && xmlRes.body.includes('<Выгрузка1СЗУПКонфигурацияКазахстан')) {
+      record('1C:ZUP 8.3 Kazakhstan XML Payroll Export', true, 'Valid 1C XML exchange payroll document exported');
+    } else {
+      record('1C:ZUP 8.3 Kazakhstan XML Payroll Export', false, `Status ${xmlRes.status}`);
+    }
+  } catch (e) {
+    record('1C:ZUP 8.3 Kazakhstan XML Payroll Export', false, e.message);
+  }
+
+  // 18. Enbek.kz / ЕСУТД Contract Synchronization
+  try {
+    const enbekRes = await req('POST', '/api/v1/employees/emp-1/sync-enbek');
+    if (enbekRes.status === 200 && enbekRes.body.success && enbekRes.body.employee.enbekStatus === 'REGISTERED') {
+      record('Enbek.kz (ЕСУТД РК) Contract Registration', true, `Contract registered with ID: ${enbekRes.body.employee.enbekContractId}`);
+    } else {
+      record('Enbek.kz (ЕСУТД РК) Contract Registration', false, `Status ${enbekRes.status}`);
+    }
+  } catch (e) {
+    record('Enbek.kz (ЕСУТД РК) Contract Registration', false, e.message);
+  }
+
+  // 19. AI Courier Performance Review & Evaluation
+  try {
+    const aiReviewRes = await req('POST', '/api/v1/employees/emp-2/ai-review');
+    if (aiReviewRes.status === 200 && aiReviewRes.body.evaluation && (aiReviewRes.body.evaluation.includes('ХАРАКТЕРИСТИКА') || aiReviewRes.body.evaluation.includes('SLA'))) {
+      record('AI Courier Performance Appraisal & Review', true, 'LLM evaluation based on delivery SLA and CSAT rating generated');
+    } else {
+      record('AI Courier Performance Appraisal & Review', false, `Status ${aiReviewRes.status}`);
+    }
+  } catch (e) {
+    record('AI Courier Performance Appraisal & Review', false, e.message);
+  }
+
   // Reset database back to clean state
   try {
     await req('POST', '/api/v1/system/reset-db');

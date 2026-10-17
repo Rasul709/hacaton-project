@@ -33,6 +33,18 @@ export interface Employee {
   avatarUrl?: string;
   address?: string;
   emergencyContact?: string;
+  salary?: number;
+  iin?: string;
+  contractNumber?: string;
+  enbekStatus?: 'REGISTERED' | 'PENDING' | 'NOT_REGISTERED';
+  enbekContractId?: string;
+  enbekSyncDate?: string;
+  kpi?: {
+    onTimeDeliveryRate?: number;
+    averageDeliveryMinutes?: number;
+    csatRating?: number;
+    completedOrders?: number;
+  };
 }
 
 export interface Department {

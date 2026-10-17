@@ -146,6 +146,34 @@ export const api = {
         body: JSON.stringify({ status }),
       });
     },
+
+    async syncEnbek(id: string): Promise<{ success: boolean; message: string; employee: Employee }> {
+      if (isDemoModeEnabled()) {
+        const emp = await mockService.getEmployeeById(id);
+        if (emp) {
+          emp.enbekStatus = 'REGISTERED';
+          emp.enbekContractId = `ESUTD-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+          emp.enbekSyncDate = new Date().toISOString();
+        }
+        return { success: true, message: 'Зарегистрировано в ЕСУТД', employee: emp! };
+      }
+      return apiRequest<{ success: boolean; message: string; employee: Employee }>(`/employees/${id}/sync-enbek`, {
+        method: 'POST',
+      });
+    },
+
+    async getAiReview(id: string): Promise<{ employeeId: string; generatedAt: string; evaluation: string }> {
+      if (isDemoModeEnabled()) {
+        return {
+          employeeId: id,
+          generatedAt: new Date().toISOString(),
+          evaluation: 'AI HR Performance Report: Высокие показатели соблюдения SLA доставки (98.6%) и корпоративных стандартов Jana Post.',
+        };
+      }
+      return apiRequest<{ employeeId: string; generatedAt: string; evaluation: string }>(`/employees/${id}/ai-review`, {
+        method: 'POST',
+      });
+    },
   },
 
   // --- Departments ---
@@ -371,6 +399,14 @@ export const api = {
       const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
       const q = month ? `?month=${encodeURIComponent(month)}` : '';
       return `${base.replace(/\/$/, '')}/documents/payslip/${id}${q}`;
+    },
+    getContractUrl: (id: string) => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      return `${base.replace(/\/$/, '')}/documents/contract/${id}`;
+    },
+    get1cExportUrl: () => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      return `${base.replace(/\/$/, '')}/documents/export-1c`;
     },
   },
 

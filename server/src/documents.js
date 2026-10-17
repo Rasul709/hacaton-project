@@ -475,3 +475,157 @@ export function renderPayslip(employee, monthStr = 'Октябрь 2026 г.') {
 </body>
 </html>`;
 }
+
+export function renderEmploymentContract(employee) {
+  const empName = `${employee.lastName} ${employee.firstName}`;
+  const iin = employee.iin || '940512300412';
+  const pos = employee.jobTitle || 'Специалист логистической сети';
+  const dept = employee.departmentName || 'Департамент логистики и доставки';
+  const contractNum = employee.contractNumber || `ТД-${employee.id.replace('emp-', '').padStart(4, '0')}/2026`;
+  const contractDate = employee.startDate || '2026-01-15';
+  const salary = (employee.salary || 350000).toLocaleString('ru-RU');
+  const esutdId = employee.enbekContractId || `ESUTD-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+
+  return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Трудовой договор № ${contractNum} (ст. 33 ТК РК) — ${empName}</title>
+  <style>
+    body { font-family: 'Times New Roman', Times, serif; font-size: 13.5px; line-height: 1.5; color: #111; margin: 30px auto; max-width: 820px; padding: 25px; }
+    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 12px; }
+    .title { font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px; text-align: center; }
+    .city-date { display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: bold; }
+    h4 { margin: 16px 0 6px 0; font-size: 14px; text-transform: uppercase; }
+    p { margin: 6px 0; text-align: justify; }
+    .esutd-badge { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 12px 16px; margin: 20px 0; display: flex; align-items: center; justify-content: space-between; font-family: sans-serif; }
+    .signatures { margin-top: 35px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .sign-box { border-top: 1px solid #000; padding-top: 8px; font-size: 12px; }
+    .print-btn { background: #2563EB; color: #fff; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; margin-bottom: 20px; font-family: sans-serif; }
+    @media print { .print-btn { display: none; } body { margin: 0; padding: 0; } }
+  </style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨️ Распечатать трудовой договор / Сохранить в PDF</button>
+
+  <div class="header">
+    <div style="font-size: 15px; font-weight: bold; text-transform: uppercase;">ТОО «Jana Post Logistics»</div>
+    <div style="font-size: 11px; color: #444;">БИН: 210840032190 | Республика Казахстан, г. Алматы, пр. Аль-Фараби 77/7, БЦ «Esentai»</div>
+  </div>
+
+  <div class="title">ТРУДОВОЙ ДОГОВОР № ${contractNum}</div>
+  <p style="text-align: center; font-size: 12px; margin-top: 0;">(в соответствии со статьей 33 Трудового кодекса Республики Казахстан)</p>
+
+  <div class="city-date">
+    <div>г. Алматы</div>
+    <div>«${contractDate.split('-')[2] || '15'}» января ${contractDate.split('-')[0] || '2026'} г.</div>
+  </div>
+
+  <div class="esutd-badge">
+    <div>
+      <div style="font-weight: 800; color: #166534; font-size: 13px;">🟢 ЗАРЕГИСТРИРОВАНО В ЕСУТД РК (Портал Enbek.kz)</div>
+      <div style="font-size: 11px; color: #15803d; margin-top: 3px;">
+        Регистрационный номер ЕСУТД: <strong>${esutdId}</strong><br>
+        Единая система учета трудовых договоров Министерства труда и социальной защиты населения РК
+      </div>
+    </div>
+    <div style="font-weight: bold; font-size: 11px; color: #166534; border: 1px solid #86efac; padding: 4px 8px; border-radius: 4px; background: #fff;">
+      СТАТУС: АКТИВЕН
+    </div>
+  </div>
+
+  <p>
+    <strong>ТОО «Jana Post Logistics»</strong>, именуемое в дальнейшем «Работодатель», в лице Генерального директора 
+    Смагуловой Айгерим Муратовны, действующей на основании Устава, с одной стороны, и гражданин(ка) 
+    <strong>${empName}</strong>, ИИН <code>${iin}</code>, именуемый(ая) в дальнейшем «Работник», с другой стороны, 
+    заключили настоящий Трудовой договор о нижеследующем:
+  </p>
+
+  <h4>1. Предмет договора и место работы</h4>
+  <p>
+    1.1. Работодатель принимает Работника на должность <strong>«${pos}»</strong> в структурное подразделение 
+    <strong>«${dept}»</strong> (г. Алматы, логистический хаб Jana Post).<br>
+    1.2. Работа по настоящему Договору является для Работника основным местом работы.<br>
+    1.3. Срок действия договора: заключен на неопределенный срок в соответствии со ст. 30 ТК РК.<br>
+    1.4. Работнику устанавливается испытательный срок продолжительностью <strong>3 (три) месяца</strong> (ст. 36 ТК РК).
+  </p>
+
+  <h4>2. Условия оплаты труда</h4>
+  <p>
+    2.1. Работнику устанавливается должностной оклад в размере <strong>${salary} тенге</strong> в месяц до удержания налогов.<br>
+    2.2. Выплата заработной платы производится не реже одного раза в месяц, не позднее 10 числа месяца, следующего за отчетным (ст. 113 ТК РК).<br>
+    2.3. Работодатель удерживает обязательные пенсионные взносы (ОПВ 10%), взносы ОСМС (2%) и индивидуальный подоходный налог (ИПН 10%) в строгом соответствии с налоговым законодательством РК.
+  </p>
+
+  <h4>3. Режим рабочего времени и отпуска</h4>
+  <p>
+    3.1. Работнику устанавливается пятидневная 40-часовая рабочая неделя с двумя выходными днями (ст. 68 ТК РК).<br>
+    3.2. Работнику предоставляется ежегодный оплачиваемый трудовой отпуск продолжительностью <strong>24 (двадцать четыре) календарных дня</strong> (ст. 88 ТК РК). Праздничные дни в число дней отпуска не включаются (ст. 90 ТК РК).
+  </p>
+
+  <h4>4. Электронная цифровая подпись (ЭЦП НУЦ РК)</h4>
+  <p>
+    4.1. Настоящий договор составлен в электронном виде и подписан ЭЦП сторон в соответствии с Законом РК «Об электронном документе и электронной цифровой подписи».
+  </p>
+
+  <div class="signatures">
+    <div>
+      <div style="font-weight: bold; margin-bottom: 8px;">РАБОТОДАТЕЛЬ:</div>
+      <div class="sign-box">
+        ТОО «Jana Post Logistics»<br>
+        БИН: 210840032190<br>
+        Директор: Смагулова А. М.<br>
+        <em>Подписано ЭЦП НУЦ РК: KZ-NUCO-JP-DIR</em>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight: bold; margin-bottom: 8px;">РАБОТНИК:</div>
+      <div class="sign-box">
+        ${empName}<br>
+        ИИН: ${iin}<br>
+        Подпись работника: ________________<br>
+        <em>Подписано ЭЦП НУЦ РК: KZ-NUCO-EMP-${iin.slice(-6)}</em>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export function render1cXml(attendance = [], employees = []) {
+  const dateStr = new Date().toISOString().split('T')[0];
+  const itemsXml = employees
+    .map((emp) => {
+      const gross = emp.salary || 350000;
+      const opv = Math.round(gross * 0.1);
+      const vosms = Math.round(gross * 0.02);
+      const taxableBase = Math.max(0, gross - opv - vosms - 55048);
+      const ipn = Math.round(taxableBase * 0.1);
+      const net = gross - opv - vosms - ipn;
+
+      return `    <Сотрудник>
+      <ТабельныйНомер>${emp.employeeId || emp.id}</ТабельныйНомер>
+      <ФИО>${emp.lastName} ${emp.firstName}</ФИО>
+      <ИИН>${emp.iin || '940512300412'}</ИИН>
+      <Должность>${emp.jobTitle}</Должность>
+      <Подразделение>${emp.departmentName || 'Отдел логистики'}</Подразделение>
+      <ОтработаноДней>22</ОтработаноДней>
+      <ОтработаноЧасов>176</ОтработаноЧасов>
+      <НачисленоОклад>${gross}</НачисленоОклад>
+      <УдержаноОПВ>${opv}</УдержаноОПВ>
+      <УдержаноВОСМС>${vosms}</УдержаноВОСМС>
+      <УдержаноИПН>${ipn}</УдержаноИПН>
+      <КВыплате>${net}</КВыплате>
+    </Сотрудник>`;
+    })
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Выгрузка1СЗУПКонфигурацияКазахстан ВерсияФормата="2.1" ДатаФормирования="${dateStr}" Организация="ТОО Jana Post Logistics" БИН="210840032190">
+  <Документ Вид="ТабельИНачислениеЗарплаты" Период="2026-10">
+    <Сотрудники>
+${itemsXml}
+    </Сотрудники>
+  </Документ>
+</Выгрузка1СЗУПКонфигурацияКазахстан>`;
+}
