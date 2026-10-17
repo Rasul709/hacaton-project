@@ -63,6 +63,23 @@ try {
   console.warn('[Database] Error initializing database state:', e);
 }
 
+const EMAIL_ALIASES = {
+  'admin@janapost.kz': 'a.smagulova@janapost.kz',
+  'hr@janapost.kz': 'z.ibrayeva@janapost.kz',
+  'manager@janapost.kz': 'b.kassymov@janapost.kz',
+  'employee@janapost.kz': 'a.omarov@janapost.kz',
+};
+
+function findEmployeeByEmail(email) {
+  if (!email) return db.employees[0];
+  const normalized = email.toLowerCase().trim();
+  const target = EMAIL_ALIASES[normalized] || normalized;
+  return (
+    db.employees.find((e) => e.email.toLowerCase() === target || e.email.toLowerCase() === normalized) ||
+    db.employees[0]
+  );
+}
+
 // Helper: Extract authenticated user from Bearer token
 function getUserFromAuth(req) {
   const authHeader = req.headers.authorization;
@@ -72,7 +89,7 @@ function getUserFromAuth(req) {
       const emailBase64 = token.replace('jwt-jp-live-token-', '');
       try {
         const email = Buffer.from(emailBase64, 'base64').toString('utf-8');
-        const user = db.employees.find((e) => e.email.toLowerCase() === email.toLowerCase());
+        const user = findEmployeeByEmail(email);
         if (user) return user;
       } catch {
         // ignore decoding errors
@@ -135,7 +152,7 @@ app.post('/api/v1/system/reset-db', (req, res) => {
 // ----------------------------------------------------
 app.post('/api/v1/auth/login', (req, res) => {
   const { email } = req.body;
-  const user = db.employees.find((e) => e.email.toLowerCase() === (email || '').toLowerCase()) || db.employees[0];
+  const user = findEmployeeByEmail(email);
 
   const role =
     user.id === 'emp-1'
@@ -146,14 +163,17 @@ app.post('/api/v1/auth/login', (req, res) => {
       ? 'DEPARTMENT_HEAD'
       : 'EMPLOYEE';
 
+  const loginEmail = (email || '').toLowerCase().trim();
+  const tokenEmail = loginEmail && EMAIL_ALIASES[loginEmail] ? loginEmail : user.email;
+
   res.json({
-    token: 'jwt-jp-live-token-' + Buffer.from(user.email).toString('base64'),
+    token: 'jwt-jp-live-token-' + Buffer.from(tokenEmail).toString('base64'),
     user: {
       id: user.id,
       employeeId: user.employeeId,
       firstName: user.firstName,
       lastName: user.lastName,
-      email: user.email,
+      email: tokenEmail,
       role,
       departmentId: user.departmentId,
       departmentName: user.departmentName,
@@ -175,12 +195,24 @@ app.get('/api/v1/auth/me', (req, res) => {
       ? 'DEPARTMENT_HEAD'
       : 'EMPLOYEE';
 
+  let displayEmail = user.email;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    if (token.startsWith('jwt-jp-live-token-')) {
+      try {
+        const decoded = Buffer.from(token.replace('jwt-jp-live-token-', ''), 'base64').toString('utf-8');
+        if (decoded.includes('@')) displayEmail = decoded;
+      } catch {}
+    }
+  }
+
   res.json({
     id: user.id,
     employeeId: user.employeeId,
     firstName: user.firstName,
     lastName: user.lastName,
-    email: user.email,
+    email: displayEmail,
     role,
     departmentId: user.departmentId,
     departmentName: user.departmentName,
