@@ -26,3 +26,18 @@ dist-ssr
 # Database runtime files
 database/data.json
 database/*.tmp
+
+# Consolidated source dumps
+HR_Digital_All_Sources.*
+.vercel
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+
+# SQLite local databases
+database/prisma/*.db
+database/prisma/*.db-journal
+*.db
+*.db-journal

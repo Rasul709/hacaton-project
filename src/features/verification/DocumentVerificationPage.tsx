@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShieldCheck, CheckCircle2, FileText, ArrowLeft, Printer, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { api } from '@/lib/api';
+
 
 interface VerificationData {
   valid: boolean;
@@ -36,17 +38,14 @@ export const DocumentVerificationPage: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
-    fetch(`http://localhost:3000/api/v1/documents/verify/${encodeURIComponent(docId)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Документ не найден в государственном реестре');
-        return res.json();
-      })
-      .then((json) => {
+    api.documents.verify(encodeURIComponent(docId))
+      .then((json: VerificationData) => {
         if (isMounted) {
           setData(json);
           setError(null);
         }
       })
+
       .catch((err) => {
         if (isMounted) {
           setError(err.message || 'Ошибка проверки');
@@ -198,10 +197,11 @@ export const DocumentVerificationPage: React.FC = () => {
                   variant="primary"
                   size="sm"
                   leftIcon={<Printer className="w-4 h-4" />}
-                  onClick={() => window.open(`http://localhost:3000/api/v1/documents/leave-order/${encodeURIComponent(docId)}`, '_blank')}
+                  onClick={() => window.open(api.documents.getLeaveOrderUrl(encodeURIComponent(docId)), '_blank')}
                 >
                   Открыть печатный бланк
                 </Button>
+
               </div>
             </>
           )}

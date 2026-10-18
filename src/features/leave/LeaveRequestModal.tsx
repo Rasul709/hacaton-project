@@ -5,6 +5,11 @@ import { z } from 'zod';
 import { Modal } from '@/components/ui/Modal';
 import { Input, Textarea, Select } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Paperclip, FileText, X, Sparkles } from 'lucide-react';
+import { api } from '@/lib/api';
+import { calculateVacationDaysWithHolidays } from '@/lib/utils/kzCalendar';
+import { getKazakhstanDateString } from '@/lib/utils';
+import { LeaveType } from '@/types';
 
 const leaveRequestSchema = z
   .object({
@@ -14,21 +19,13 @@ const leaveRequestSchema = z
       'UNPAID',
       'MATERNITY',
       'STUDY',
-      'SALARY_ADVANCE',
-      'WORK_CERTIFICATE',
     ]),
-    startDate: z.string().min(1, 'Укажите дату'),
-    endDate: z.string().min(1, 'Укажите дату'),
-    reason: z.string().min(3, 'Укажите причину или основание для заявки'),
-    amount: z.coerce.number().optional(),
+    startDate: z.string().min(1, 'Укажите дату начала'),
+    endDate: z.string().min(1, 'Укажите дату окончания'),
+    reason: z.string().min(3, 'Укажите причину или основание для отпуска'),
   })
   .refine(
-    (data) => {
-      if (data.leaveType === 'SALARY_ADVANCE' || data.leaveType === 'WORK_CERTIFICATE') {
-        return true;
-      }
-      return new Date(data.endDate) >= new Date(data.startDate);
-    },
+    (data) => new Date(data.endDate) >= new Date(data.startDate),
     {
       message: 'Дата окончания не может быть раньше даты начала',
       path: ['endDate'],
@@ -37,16 +34,10 @@ const leaveRequestSchema = z
 
 type LeaveFormValues = z.infer<typeof leaveRequestSchema>;
 
-import { Paperclip, FileText, X, Sparkles, Calculator, Info } from 'lucide-react';
-import { api } from '@/lib/api';
-import { calculateVacationDaysWithHolidays } from '@/lib/utils/kzCalendar';
-import { calculateKazakhstanVacationPay } from '@/lib/utils/kzPayroll';
-import { getKazakhstanDateString } from '@/lib/utils';
-
 interface LeaveRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: LeaveFormValues & { daysCount: number; amount?: number; attachmentUrl?: string; attachmentName?: string }) => Promise<void>;
+  onSubmit: (data: LeaveFormValues & { daysCount: number; attachmentUrl?: string; attachmentName?: string }) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -69,7 +60,6 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       startDate: getKazakhstanDateString(),
       endDate: getKazakhstanDateString(new Date(Date.now() + 7 * 86400000)),
       reason: '',
-      amount: 150000,
     },
   });
 
@@ -79,19 +69,14 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
   // Calculate days count taking into account Article 90 of Kazakhstan Labor Code
   const vacationCalculation = React.useMemo(() => {
-    if (!startDate || !endDate || leaveType === 'SALARY_ADVANCE' || leaveType === 'WORK_CERTIFICATE') {
+    if (!startDate || !endDate) {
       return { totalCalendarDays: 1, holidaysCount: 0, holidays: [], chargeableDays: 1, explanation: '' };
     }
     return calculateVacationDaysWithHolidays(startDate, endDate);
-  }, [startDate, endDate, leaveType]);
+  }, [startDate, endDate]);
 
   const calculatedDays = vacationCalculation.chargeableDays || 1;
 
-  // Real-time payroll calculation for annual leave
-  const vacationPay = React.useMemo(() => {
-    if (leaveType !== 'ANNUAL') return null;
-    return calculateKazakhstanVacationPay(450000, calculatedDays);
-  }, [leaveType, calculatedDays]);
 
   const [attachment, setAttachment] = React.useState<{ url: string; filename: string } | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
@@ -124,7 +109,6 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     await onSubmit({
       ...values,
       daysCount: calculatedDays,
-      amount: values.leaveType === 'SALARY_ADVANCE' ? values.amount : undefined,
       attachmentUrl: attachment?.url,
       attachmentName: attachment?.filename,
     });
@@ -133,12 +117,10 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     onClose();
   };
 
-  const serviceOptions = [
+  const leaveOptions: { label: string; value: LeaveType }[] = [
     { label: '🏖️ Ежегодный оплачиваемый отпуск (ТК РК ст. 88)', value: 'ANNUAL' },
-    { label: '💰 Аванс по заработной плате (межрасчетная выплата)', value: 'SALARY_ADVANCE' },
-    { label: '📄 Справка с места работы / о доходах', value: 'WORK_CERTIFICATE' },
     { label: '🏥 Больничный лист (по нетрудоспособности)', value: 'SICK' },
-    { label: '⏳ Отпуск без сохранения зарплаты (без содержания)', value: 'UNPAID' },
+    { label: '⏳ Отпуск без сохранения заработной платы (без содержания)', value: 'UNPAID' },
     { label: '🎓 Учебный отпуск (сессия / повышение квалификации)', value: 'STUDY' },
     { label: '👶 Отпуск по беременности и родам / уходу за ребенком', value: 'MATERNITY' },
   ];
@@ -147,120 +129,71 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Подать электронную HR-заявку"
-      description="Заявление поступит на рассмотрение непосредственному руководителю и в кадровую службу Jana Post"
+      title="Подать заявление на отпуск"
+      description="Демонстрационная заявка: не является кадровым документом и не рассчитывает баланс или выплату"
       maxWidth="md"
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         <Select
-          label="Тип кадровой заявки / сервиса"
-          options={serviceOptions}
+          label="Вид отпуска"
+          options={leaveOptions}
           error={errors.leaveType?.message}
           {...register('leaveType')}
         />
 
-        {/* If Advance, show Amount input */}
-        {leaveType === 'SALARY_ADVANCE' && (
+        {/* Date pickers */}
+        <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Запрашиваемая сумма аванса (в тенге, ₸)"
-            type="number"
-            step="10000"
-            placeholder="Например: 150000"
-            error={errors.amount?.message}
-            hint="Плановая дата выплаты: 15-е число месяца (до 50% от должностного оклада)"
-            {...register('amount')}
-          />
-        )}
-
-        {/* Date pickers (for vacation or single date for advance/certificate) */}
-        {leaveType !== 'SALARY_ADVANCE' && leaveType !== 'WORK_CERTIFICATE' ? (
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Дата начала"
-              type="date"
-              error={errors.startDate?.message}
-              {...register('startDate')}
-            />
-            <Input
-              label="Дата окончания"
-              type="date"
-              error={errors.endDate?.message}
-              {...register('endDate')}
-            />
-          </div>
-        ) : (
-          <Input
-            label={leaveType === 'SALARY_ADVANCE' ? 'Расчетный месяц' : 'Дата предоставления'}
+            label="Дата начала"
             type="date"
             error={errors.startDate?.message}
             {...register('startDate')}
           />
-        )}
+          <Input
+            label="Дата окончания"
+            type="date"
+            error={errors.endDate?.message}
+            {...register('endDate')}
+          />
+        </div>
 
         {/* Calculated Days badge for leave types (Article 90 KZ Labor Code) */}
-        {leaveType !== 'SALARY_ADVANCE' && leaveType !== 'WORK_CERTIFICATE' && (
-          <div className="space-y-2">
-            <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-center justify-between text-xs text-blue-900">
-              <div>
-                <span className="font-medium block">К списанию из отпускного баланса:</span>
-                {vacationCalculation.holidaysCount > 0 && (
-                  <span className="text-[11px] text-blue-600">
-                    Период: {vacationCalculation.totalCalendarDays} дн. (ст. 90 ТК РК: праздники не уменьшают баланс)
-                  </span>
-                )}
-              </div>
-              <span className="font-bold text-sm text-blue-700 font-mono">
-                {calculatedDays} {calculatedDays === 1 ? 'день' : 'дней'}
-              </span>
+        <div className="space-y-2">
+          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-center justify-between text-xs text-blue-900">
+            <div>
+              <span className="font-medium block">К списанию из отпускного баланса:</span>
+              {vacationCalculation.holidaysCount > 0 && (
+                <span className="text-[11px] text-blue-600">
+                  Период: {vacationCalculation.totalCalendarDays} дн. (ст. 90 ТК РК: праздники не уменьшают баланс)
+                </span>
+              )}
             </div>
-
-            {/* If public holidays are in the chosen range, show special badge */}
-            {vacationCalculation.holidaysCount > 0 && (
-              <div className="p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl flex items-start gap-2 text-xs text-amber-900">
-                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold">Праздничные дни исключены из расхода (ст. 90 ТК РК):</span>
-                  <p className="text-[11px] text-amber-800 mt-0.5">
-                    {vacationCalculation.holidays.map((h) => `${h.name} (${h.date.split('-').reverse().slice(0, 2).join('.')})`).join(', ')}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Interactive Vacation Pay Calculator for Annual Leave */}
-            {leaveType === 'ANNUAL' && vacationPay && (
-              <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-xl text-xs space-y-1.5">
-                <div className="flex items-center justify-between font-bold text-emerald-950">
-                  <div className="flex items-center gap-1.5">
-                    <Calculator className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Расчет отпускных (ТК РК, оклад 450 000 ₸):</span>
-                  </div>
-                  <span className="font-mono text-sm text-emerald-700">
-                    {vacationPay.netVacationPay.toLocaleString()} ₸
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-emerald-800 pt-1 border-t border-emerald-200/50">
-                  <span>Начислено: {vacationPay.grossVacationPay.toLocaleString()} ₸</span>
-                  <span>Удержания (ОПВ, ВОСМС, ИПН): -{vacationPay.totalDeductions.toLocaleString()} ₸</span>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] text-emerald-700">
-                  <Info className="w-3 h-3 shrink-0" />
-                  <span>Выплата за 3 раб. дня до отпуска (ст. 92 п. 4 ТК РК) на Kaspi/Halyk</span>
-                </div>
-              </div>
-            )}
+            <span className="font-bold text-sm text-blue-700 font-mono">
+              {calculatedDays} {calculatedDays === 1 ? 'день' : 'дней'}
+            </span>
           </div>
-        )}
+
+          {/* If public holidays are in the chosen range, show special badge */}
+          {vacationCalculation.holidaysCount > 0 && (
+            <div className="p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl flex items-start gap-2 text-xs text-amber-900">
+              <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                  <span className="font-bold">Праздничные дни в демо-календаре (не кадровый расчет):</span>
+                <p className="text-[11px] text-amber-800 mt-0.5">
+                  {vacationCalculation.holidays.map((h) => `${h.name} (${h.date.split('-').reverse().slice(0, 2).join('.')})`).join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+            Демонстрационный сценарий. Дни указаны по выбранному диапазону; баланс, календарные исключения и выплаты кадровой системой не подтверждаются.
+          </div>
+        </div>
 
         <Textarea
-          label="Обоснование / Комментарий к заявке"
-          placeholder={
-            leaveType === 'SALARY_ADVANCE'
-              ? 'Например: плановый аванс на расчетный счет или семейные обстоятельства...'
-              : leaveType === 'WORK_CERTIFICATE'
-              ? 'Например: для предоставления в АО Kaspi Bank / Посольство / ЦОН...'
-              : 'Обоснование отпуска, контакт на время отсутствия или номер подтверждающей справки...'
-          }
+          label="Обоснование / Контакт на время отпуска"
+          placeholder="Обоснование отпуска, замещающий сотрудник или номер больничного листа..."
           error={errors.reason?.message}
           {...register('reason')}
         />
@@ -306,7 +239,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             Отмена
           </Button>
           <Button type="submit" variant="primary" size="sm" isLoading={isLoading}>
-            Отправить на согласование
+            Отправить заявление
           </Button>
         </div>
       </form>

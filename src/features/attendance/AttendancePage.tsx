@@ -43,7 +43,7 @@ export const AttendancePage: React.FC = () => {
   // GPS Geofencing States
   const [selectedHub, setSelectedHub] = useState<string>('hub-almaty-north');
   const [gpsVerifying, setGpsVerifying] = useState<boolean>(false);
-  const [gpsStatus, setGpsStatus] = useState<string>('Хаб «Алматы-Север» • GPS подтвержден (18м)');
+  const [gpsStatus, setGpsStatus] = useState<string>('Хаб «Алматы-Север» • Готов к проверке геопозиции');
 
   const toast = useToast();
   const { t } = useLanguage();
@@ -83,26 +83,35 @@ export const AttendancePage: React.FC = () => {
   // GPS Detection / Verification handler
   const handleDetectGps = () => {
     setGpsVerifying(true);
+    const hub = JANA_POST_HUBS.find((h) => h.id === selectedHub) || JANA_POST_HUBS[0];
+
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const res = verifyHubGeofence(pos.coords.latitude, pos.coords.longitude, selectedHub);
           setGpsStatus(res.message);
           setGpsVerifying(false);
-          toast.info('Геолокация определена', res.message);
+          if (res.verified) {
+            toast.success('Геозона подтверждена', res.message);
+          } else {
+            toast.warning('Внимание: вне геозоны', res.message);
+          }
         },
-        () => {
-          const hub = JANA_POST_HUBS.find((h) => h.id === selectedHub) || JANA_POST_HUBS[0];
-          setGpsStatus(`Хаб «${hub.name}» • GPS подтвержден (24 м)`);
+        (err) => {
+          setGpsStatus(`GPS недоступен • Фиксация по сети хаба «${hub.name}»`);
           setGpsVerifying(false);
-          toast.success('Геозона подтверждена', `Сотрудник на территории хаба (${hub.city})`);
+          const errorMsg =
+            err.code === 1
+              ? 'Доступ к геопозиции отклонен в браузере. Время смены будет зафиксировано по корпоративной сети хаба.'
+              : 'Сигнал GPS не определен. Фиксация смены производится по корпоративной сети хаба.';
+          toast.info('Геолокация недоступна', errorMsg);
         },
-        { timeout: 3500 }
+        { timeout: 5000, enableHighAccuracy: true }
       );
     } else {
-      const hub = JANA_POST_HUBS.find((h) => h.id === selectedHub) || JANA_POST_HUBS[0];
-      setGpsStatus(`Хаб «${hub.name}» • GPS подтвержден (24 м)`);
+      setGpsStatus(`Браузер не поддерживает GPS • Сеть хаба «${hub.name}»`);
       setGpsVerifying(false);
+      toast.info('GPS не поддерживается', 'Фиксация смены производится по сети хаба.');
     }
   };
 
@@ -141,7 +150,10 @@ export const AttendancePage: React.FC = () => {
 
   const handleClockIn = async () => {
     const hub = JANA_POST_HUBS.find((h) => h.id === selectedHub);
-    const notes = `[GPS: ${hub ? hub.city + ' / ' + hub.name : 'Хаб Алматы'}] Электронный чек-ин`;
+    const isGpsVerified = gpsStatus.includes('Внутри геозоны') || gpsStatus.includes('подтверждена');
+    const notes = isGpsVerified
+      ? `[GPS: ${hub ? hub.city + ' / ' + hub.name : 'Хаб Алматы'}] Электронный чек-ин`
+      : `[Корпоративная сеть: ${hub ? hub.name : 'Хаб Алматы'}] Электронный чек-ин`;
     await clockInMutation.mutateAsync(notes);
   };
 

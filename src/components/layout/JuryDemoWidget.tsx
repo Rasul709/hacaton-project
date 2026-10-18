@@ -5,8 +5,6 @@ import {
   Sparkles,
   CheckCircle,
   ChevronRight,
-  ExternalLink,
-  Presentation,
   X,
 } from 'lucide-react';
 
@@ -170,19 +168,7 @@ export const JuryDemoWidget: React.FC = () => {
             </div>
 
             {/* Quick Actions Footer */}
-            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  navigate('/presentation');
-                }}
-                className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                <Presentation className="w-4 h-4" />
-                <span>30-слайдовый питч платформы</span>
-                <ExternalLink className="w-3 h-3" />
-              </button>
-
+            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-end">
               <button
                 onClick={() => setIsOpen(false)}
                 className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"

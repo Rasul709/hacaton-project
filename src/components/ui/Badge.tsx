@@ -102,7 +102,7 @@ export const LeaveStatusBadge: React.FC<{ status: LeaveStatus }> = ({ status }) 
   }
 };
 
-export const LeaveTypeBadge: React.FC<{ type: LeaveType }> = ({ type }) => {
+export const LeaveTypeBadge: React.FC<{ type: LeaveType | string }> = ({ type }) => {
   switch (type) {
     case 'ANNUAL':
       return <Badge variant="info">Ежегодный отпуск</Badge>;
@@ -114,14 +114,39 @@ export const LeaveTypeBadge: React.FC<{ type: LeaveType }> = ({ type }) => {
       return <Badge variant="purple">Декретный отпуск</Badge>;
     case 'STUDY':
       return <Badge variant="warning">Учебный отпуск</Badge>;
-    case 'SALARY_ADVANCE':
-      return <Badge variant="success">Аванс по зарплате</Badge>;
-    case 'WORK_CERTIFICATE':
-      return <Badge variant="info">Справка с работы</Badge>;
     default:
       return <Badge variant="neutral">{type}</Badge>;
   }
 };
+
+export const SalaryAdvanceBadge: React.FC<{ status: string }> = ({ status }) => {
+  switch (status) {
+    case 'PENDING':
+      return <Badge variant="warning" dot>На согласовании</Badge>;
+    case 'APPROVED':
+      return <Badge variant="success" dot>К выплате 15-го</Badge>;
+    case 'PAID':
+      return <Badge variant="success">Выплачено</Badge>;
+    case 'REJECTED':
+      return <Badge variant="danger" dot>Отклонено</Badge>;
+    default:
+      return <Badge variant="neutral">{status}</Badge>;
+  }
+};
+
+export const CertificateBadge: React.FC<{ status: string }> = ({ status }) => {
+  switch (status) {
+    case 'PENDING':
+      return <Badge variant="warning" dot>Формируется</Badge>;
+    case 'READY':
+      return <Badge variant="success" dot>Готова к скачиванию</Badge>;
+    case 'REJECTED':
+      return <Badge variant="danger" dot>Отклонена</Badge>;
+    default:
+      return <Badge variant="neutral">{status}</Badge>;
+  }
+};
+
 
 export const TaskPriorityBadge: React.FC<{ priority: TaskPriority }> = ({ priority }) => {
   switch (priority) {
@@ -150,5 +175,18 @@ export const TaskStatusBadge: React.FC<{ status: TaskStatus }> = ({ status }) =>
       return <Badge variant="danger">Отменено</Badge>;
     default:
       return <Badge variant="neutral">{status}</Badge>;
+  }
+};
+
+export const HRWorkflowCategoryBadge: React.FC<{ category?: string }> = ({ category }) => {
+  switch (category) {
+    case 'ONBOARDING':
+      return <Badge variant="info">Онбординг</Badge>;
+    case 'OFFBOARDING':
+      return <Badge variant="warning">Оффбординг</Badge>;
+    case 'COMPLIANCE':
+      return <Badge variant="purple">Комплаенс ТК РК</Badge>;
+    default:
+      return <Badge variant="neutral">Чек-лист</Badge>;
   }
 };

@@ -70,7 +70,6 @@ HR-Digital/
 │   │   ├── employees/          # Directory, filters, employee profile modal, forms
 │   │   ├── leave/              # Leave balance quotas (24d), approval workflow, calendar
 │   │   ├── notifications/      # Real-time event notifications & mark all as read
-│   │   ├── presentation/       # 30-slide pitch presentation mode with timer
 │   │   ├── settings/           # Corporate & security preferences
 │   │   └── tasks/              # Kanban/List task manager with priorities & deadlines
 │   ├── lib/api/                # HTTP client, MockService, seed data

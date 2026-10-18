@@ -70,8 +70,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleTestBackendPing = async () => {
     setPingStatus('checking');
-    setPingMessage(null);
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
     try {
       const res = await fetch(`${apiUrl}/health`, { method: 'GET' });
       if (res.ok) {
@@ -267,7 +266,7 @@ export const SettingsPage: React.FC = () => {
             <div>
               <h5 className="font-bold text-slate-900">Режим демонстрации (Demo Mode)</h5>
               <p className="text-slate-500 mt-0.5">
-                Позволяет проводить автономную презентацию хакатона без запущенного локального сервера бэкенда.
+                Позволяет автономно тестировать интерфейс в браузере без подключения к серверу API.
               </p>
             </div>
 

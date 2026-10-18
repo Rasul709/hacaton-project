@@ -14,9 +14,48 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'lucide-react',
+      '@tanstack/react-query',
+      'recharts',
+      'clsx',
+      'tailwind-merge',
+      'framer-motion',
+    ],
+  },
   server: {
     port: 5173,
     host: '0.0.0.0',
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    port: 5173,
+    host: '0.0.0.0',
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     chunkSizeWarningLimit: 1000,

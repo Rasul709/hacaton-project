@@ -198,11 +198,11 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          {/* Quick Login for Hackathon Jury */}
+          {/* Quick Login for Test Personas */}
           <div className="mt-8 pt-6 border-t border-slate-100">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-[#667085] mb-3">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Быстрый вход для жюри и тестирования:</span>
+              <span>Демонстрационные учетные записи:</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-left">

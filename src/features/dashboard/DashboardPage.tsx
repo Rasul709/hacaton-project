@@ -97,7 +97,7 @@ export const DashboardPage: React.FC = () => {
         {!isEmployee && (
           <div className="flex items-center justify-between bg-blue-50 border border-blue-200 px-4 py-2.5 rounded-xl">
             <span className="text-xs font-semibold text-blue-900">
-              👁️ Режим предпросмотра: Личный кабинет работника (Контур 2 ТЗ)
+              👁️ Режим предпросмотра: Личный кабинет сотрудника
             </span>
             <Button
               variant="outline"

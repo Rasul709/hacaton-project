@@ -43,7 +43,7 @@ export const AppLayout: React.FC = () => {
             <div className="flex items-center gap-2 overflow-hidden">
               <Radio className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
               <span className="truncate">
-                <strong>Демо-режим активен (Jana Post Hackathon Edition):</strong> данные изолированы локально в браузере. Все изменения сохраняются.
+                <strong>Демо-режим активен (Локальное хранилище данных):</strong> данные изолированы в браузере. Все изменения сохраняются.
               </span>
             </div>
             <div className="flex items-center gap-3 shrink-0">

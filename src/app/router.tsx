@@ -137,7 +137,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'presentation',
-            element: withSuspense(PresentationPage),
+            element: <Navigate to="/dashboard" replace />,
           },
         ],
       },

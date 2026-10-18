@@ -52,10 +52,10 @@ export const EmployeeDashboardView: React.FC = () => {
   });
 
   // Filter requests that belong to this employee (or demo fallback)
-  const employeeRequests = myRequests.slice(0, 4);
+  const employeeRequests = myRequests.filter((request) => request.employeeId === user?.id).slice(0, 4);
 
   // Dynamic vacation balance according to Kazakhstan Labor Code (24 days)
-  const userLeaves = myRequests.filter((r) => r.employeeId === user?.id || user?.role === 'EMPLOYEE');
+  const userLeaves = myRequests.filter((r) => r.employeeId === user?.id);
   const usedAnnualDays = userLeaves
     .filter((r) => r.leaveType === 'ANNUAL' && r.status === 'APPROVED')
     .reduce((sum, r) => sum + r.daysCount, 0);
@@ -435,15 +435,9 @@ export const EmployeeDashboardView: React.FC = () => {
                     <LeaveTypeBadge type={req.leaveType} />
                   </td>
                   <td className="py-3 px-4 text-xs text-slate-700">
-                    {req.leaveType === 'SALARY_ADVANCE' ? (
-                      <span className="font-bold text-emerald-700">
-                        {req.amount ? `${req.amount.toLocaleString()} ₸` : '150 000 ₸'}
-                      </span>
-                    ) : (
-                      <span>
-                        {formatKazakhstanDate(req.startDate)} — {formatKazakhstanDate(req.endDate)}
-                      </span>
-                    )}
+                    <span>
+                      {formatKazakhstanDate(req.startDate)} — {formatKazakhstanDate(req.endDate)} ({req.daysCount} дн.)
+                    </span>
                   </td>
                   <td className="py-3 px-4">
                     <LeaveStatusBadge status={req.status} />

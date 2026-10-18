@@ -71,7 +71,7 @@ export function getAttachmentUrl(url?: string): string {
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
     return url;
   }
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1')
+  const base = (import.meta.env.VITE_API_BASE_URL || '/api/v1')
     .replace(/\/api\/v1\/?$/, '')
     .replace(/\/$/, '');
   const cleanPath = url.startsWith('/') ? url : `/${url}`;

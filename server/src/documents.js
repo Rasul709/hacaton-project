@@ -535,7 +535,7 @@ export function renderEmploymentContract(employee) {
   const contractNum = escapeHtml(employee.contractNumber || `ТД-${employee.id.replace('emp-', '').padStart(4, '0')}/2026`);
   const contractDate = escapeHtml(employee.startDate || '2026-01-15');
   const salary = escapeHtml((employee.salary || 350000).toLocaleString('ru-RU'));
-  const esutdId = escapeHtml(employee.enbekContractId || `ESUTD-2026-${Math.floor(10000 + Math.random() * 90000)}`);
+  const esutdId = escapeHtml(employee.enbekContractId || `KZ-ESUTD-2026-180540-${String(employee.employeeId || employee.id).replace(/\D/g, '').padStart(5, '0')}`);
 
   return `<!DOCTYPE html>
 <html lang="ru">

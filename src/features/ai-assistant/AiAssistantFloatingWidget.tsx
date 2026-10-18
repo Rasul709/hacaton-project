@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ChatMessage } from '@/types';
-import { queryHrAssistant, POPULAR_QUESTIONS } from './aiKnowledgeService';
+import { askAiAssistant, queryHrAssistant, POPULAR_QUESTIONS } from './aiKnowledgeService';
 
 export const AiAssistantFloatingWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,13 +19,13 @@ export const AiAssistantFloatingWidget: React.FC = () => {
       id: 'floating-welcome',
       sender: 'assistant',
       text:
-        'Здравствуйте! Я AI HR-ассистент Jana Post. Подскажу по отпускам (ст. 88 ТК РК), авансам, справкам Т-2 и обучению в Jana Academy.',
+        'Здравствуйте! Я универсальный корпоративный AI-ассистент Jana Post. Готов ответить на любые вопросы, составить письмо, помочь с расчетами или дать нормативную справку по ТК РК.',
       timestamp: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit' }),
       sources: [
         {
-          title: 'База знаний HR Jana Post',
-          document: 'Регламент 2026',
-          section: 'Кадровые сервисы',
+          title: 'Корпоративный AI-Ассистент Jana Post',
+          document: 'Единый регламент 2026',
+          section: 'Универсальная поддержка',
           confidence: 1.0,
         },
       ],
@@ -42,7 +42,7 @@ export const AiAssistantFloatingWidget: React.FC = () => {
     }
   }, [messages, isTyping, isOpen]);
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
     if (!query) return;
 
@@ -57,11 +57,15 @@ export const AiAssistantFloatingWidget: React.FC = () => {
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = queryHrAssistant(query);
+    try {
+      const response = await askAiAssistant(query, messages);
       setMessages((prev) => [...prev, response]);
+    } catch {
+      const fallback = queryHrAssistant(query);
+      setMessages((prev) => [...prev, fallback]);
+    } finally {
       setIsTyping(false);
-    }, 500);
+    }
   };
 
   return (
@@ -204,7 +208,7 @@ export const AiAssistantFloatingWidget: React.FC = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Спросите про отпуск, аванс, Т-2..."
+              placeholder="Задайте любой вопрос или напишите задачу..."
               className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50"
             />
             <button

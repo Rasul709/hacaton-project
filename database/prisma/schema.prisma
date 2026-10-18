@@ -1,70 +1,13 @@
 // Prisma Schema for Digital HR by Jana Post
+// Production-Ready Enterprise Database Schema
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
-}
-
-enum Role {
-  admin
-  manager
-  employee
-}
-
-enum EmployeeStatus {
-  active
-  on_leave
-  probation
-  terminated
-}
-
-enum AttendanceStatus {
-  present
-  late
-  absent
-  remote
-  half_day
-}
-
-enum LeaveType {
-  annual
-  sick
-  unpaid
-  maternity
-  study
-}
-
-enum LeaveStatus {
-  pending
-  approved
-  rejected
-  cancelled
-}
-
-enum TaskPriority {
-  low
-  medium
-  high
-  urgent
-}
-
-enum TaskStatus {
-  todo
-  in_progress
-  review
-  completed
-}
-
-enum NotificationType {
-  leave
-  task
-  attendance
-  system
-  announcement
 }
 
 model Department {
@@ -74,147 +17,218 @@ model Department {
   description          String?
   managerId            String?
   managerName          String?
-  budget               Decimal    @default(0.00) @db.Decimal(15, 2)
-  employees            Employee[]
-  tasks                Task[]
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
+  employees            Employee[]
 
   @@map("departments")
 }
 
 model Employee {
-  id                   String             @id @default(uuid())
-  firstName            String             @map("first_name")
-  lastName             String             @map("last_name")
-  email                String             @unique
+  id                   String                   @id @default(uuid())
+  employeeId           String                   @unique
+  firstName            String
+  lastName             String
+  email                String                   @unique
+  passwordHash         String
+  role                 String                   @default("EMPLOYEE") // 'ADMIN' | 'HR_MANAGER' | 'DEPARTMENT_HEAD' | 'EMPLOYEE'
+  status               String                   @default("ACTIVE")   // 'ACTIVE' | 'INACTIVE'
+  jobTitle             String
+  departmentId         String?
+  departmentName       String?
+  department           Department?              @relation(fields: [departmentId], references: [id])
+  managerId            String?
+  managerName          String?
+  startDate            String
   phone                String?
-  avatarUrl            String?            @map("avatar_url")
-  role                 Role               @default(employee)
-  status               EmployeeStatus     @default(active)
-  departmentId         String?            @map("department_id")
-  department           Department?        @relation(fields: [departmentId], references: [id])
-  position             String
-  hireDate             DateTime           @map("hire_date")
-  salary               Decimal            @default(0.00) @db.Decimal(12, 2)
-  iin                  String?            @db.VarChar(12)
-  location             String?            @default("Алматы, Казахстан")
-  vacationDaysTotal    Int                @default(24) @map("vacation_days_total")
-  vacationDaysUsed     Int                @default(0) @map("vacation_days_used")
+  avatarUrl            String?
+  address              String?
+  emergencyContact     String?
+  salary               Float?
+  iin                  String?
+  contractNumber       String?
+  enbekStatus          String?                  @default("PENDING")
+  enbekContractId      String?
+  enbekSyncDate        String?
+  vacationDaysTotal    Int                      @default(24)
+  vacationDaysUsed     Int                      @default(0)
+  kpiJson              String?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
   attendanceRecords    AttendanceRecord[]
-  leaveRequests        LeaveRequest[]     @relation("EmployeeLeaveRequests")
-  reviewedLeaves       LeaveRequest[]     @relation("ReviewerLeaveRequests")
-  assignedTasks        Task[]             @relation("TaskAssignee")
-  createdTasks         Task[]             @relation("TaskCreator")
-  notifications        Notification[]
+  leaveRequests        LeaveRequest[]
+  salaryAdvances       SalaryAdvanceRequest[]
+  certificateRequests  CertificateRequest[]
+  assignedTasks        TaskItem[]               @relation("TaskAssignee")
+  createdTasks         TaskItem[]               @relation("TaskCreator")
+  notifications        AppNotification[]
   courseProgress       EmployeeCourseProgress[]
-  createdAt            DateTime           @default(now()) @map("created_at")
-  updatedAt            DateTime           @updatedAt @map("updated_at")
 
   @@map("employees")
 }
 
 model AttendanceRecord {
-  id             String           @id @default(uuid())
-  employeeId     String           @map("employee_id")
-  employee       Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  date           DateTime         @db.Date
-  clockIn        DateTime?        @map("clock_in")
-  clockOut       DateTime?        @map("clock_out")
-  status         AttendanceStatus @default(present)
-  workHours      Decimal          @default(0.00) @map("work_hours") @db.Decimal(4, 2)
-  overtimeHours  Decimal          @default(0.00) @map("overtime_hours") @db.Decimal(4, 2)
-  notes          String?
-  locationIn     String?          @map("location_in")
-  locationOut    String?          @map("location_out")
-  ipAddress      String?          @map("ip_address")
-  createdAt      DateTime         @default(now()) @map("created_at")
+  id              String    @id @default(uuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeName    String
+  departmentName  String?
+  workDate        String    // YYYY-MM-DD
+  clockIn         String?   // ISO string
+  clockOut        String?   // ISO string
+  durationMinutes Int?
+  status          String    @default("PRESENT") // 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT'
+  notes           String?
+  createdAt       DateTime  @default(now())
 
-  @@unique([employeeId, date])
+  @@unique([employeeId, workDate])
   @@map("attendance_records")
 }
 
 model LeaveRequest {
-  id              String       @id @default(uuid())
-  employeeId      String       @map("employee_id")
-  employee        Employee     @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
-  type            LeaveType    @default(annual)
-  startDate       DateTime     @map("start_date") @db.Date
-  endDate         DateTime     @map("end_date") @db.Date
-  daysCount       Int          @map("days_count")
+  id              String    @id @default(uuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeName    String
+  departmentName  String?
+  leaveType       String    @default("ANNUAL") // 'ANNUAL' | 'SICK' | 'UNPAID' | 'MATERNITY' | 'STUDY'
+  startDate       String    // YYYY-MM-DD
+  endDate         String    // YYYY-MM-DD
+  daysCount       Int
   reason          String
-  status          LeaveStatus  @default(pending)
-  reviewedById    String?      @map("reviewed_by")
-  reviewedBy      Employee?    @relation("ReviewerLeaveRequests", fields: [reviewedById], references: [id])
-  reviewedAt      DateTime?    @map("reviewed_at")
-  rejectionReason String?      @map("rejection_reason")
-  attachmentUrl   String?      @map("attachment_url")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
+  status          String    @default("PENDING") // 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+  submittedAt     String
+  attachmentUrl   String?
+  attachmentName  String?
+  reviewerId      String?
+  reviewerName    String?
+  reviewComment   String?
+  reviewedAt      String?
+  createdAt       DateTime  @default(now())
 
   @@map("leave_requests")
 }
 
-model Task {
-  id           String        @id @default(uuid())
-  title        String
-  description  String?
-  status       TaskStatus    @default(todo)
-  priority     TaskPriority  @default(medium)
-  assigneeId   String?       @map("assignee_id")
-  assignee     Employee?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  creatorId    String?       @map("creator_id")
-  creator      Employee?     @relation("TaskCreator", fields: [creatorId], references: [id])
-  departmentId String?       @map("department_id")
-  department   Department?   @relation(fields: [departmentId], references: [id])
-  dueDate      DateTime?     @map("due_date") @db.Date
-  tags         String[]
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+model SalaryAdvanceRequest {
+  id              String    @id @default(uuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeName    String
+  departmentName  String?
+  amount          Float
+  payoutDate      String    // e.g. 15th of the month
+  reason          String
+  status          String    @default("PENDING") // 'PENDING' | 'APPROVED' | 'REJECTED'
+  submittedAt     String
+  reviewerId      String?
+  reviewerName    String?
+  reviewComment   String?
+  reviewedAt      String?
+  createdAt       DateTime  @default(now())
+
+  @@map("salary_advance_requests")
+}
+
+model CertificateRequest {
+  id              String    @id @default(uuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeName    String
+  departmentName  String?
+  certificateType String    // 'WORK_CONFIRMATION' | 'INCOME_CONFIRMATION_6M' | 'INCOME_CONFIRMATION_12M' | 'FORM_T2'
+  purpose         String    // 'Банк / Ипотека', 'Посольство / Виза', 'По месту требования'
+  language        String    @default("ru") // 'ru' | 'kz'
+  status          String    @default("PENDING") // 'PENDING' | 'READY' | 'REJECTED'
+  submittedAt     String
+  completedAt     String?
+  documentUrl     String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  @@map("certificate_requests")
+}
+
+model TaskItem {
+  id                 String    @id @default(uuid())
+  title              String
+  description        String?
+  category           String?   @default("ONBOARDING") // 'ONBOARDING' | 'OFFBOARDING' | 'COMPLIANCE'
+  targetEmployeeName String?
+  status             String    @default("TODO")     // 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
+  priority           String    @default("MEDIUM")   // 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  assignedToId   String
+  assignee       Employee  @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedToName String
+  createdById    String
+  creator        Employee  @relation("TaskCreator", fields: [createdById], references: [id])
+  createdByName  String
+  dueDate        String
+  createdAt      String
+  completedAt    String?
 
   @@map("tasks")
 }
 
-model Notification {
-  id         String           @id @default(uuid())
-  userId     String           @map("user_id")
-  user       Employee         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title      String
-  message    String
-  type       NotificationType @default(system)
-  isRead     Boolean          @default(false) @map("is_read")
-  actionUrl  String?          @map("action_url")
-  createdAt  DateTime         @default(now()) @map("created_at")
+model AppNotification {
+  id        String    @id @default(uuid())
+  userId    String?
+  user      Employee? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String    @default("SYSTEM") // 'LEAVE' | 'TASK' | 'ATTENDANCE' | 'ACADEMY' | 'SYSTEM'
+  isRead    Boolean   @default(false)
+  createdAt String
+  link      String?
 
   @@map("notifications")
 }
 
 model Course {
-  id              String                   @id @default(uuid())
-  title           String
-  description     String
-  category        String
-  durationMinutes Int                      @default(45) @map("duration_minutes")
-  points          Int                      @default(100)
-  coverImage      String?                  @map("cover_image")
-  progress        EmployeeCourseProgress[]
-  createdAt       DateTime                 @default(now()) @map("created_at")
+  id               String                   @id
+  title            String
+  category         String
+  description      String
+  estimatedMinutes Int
+  lessonsCount     Int
+  isMandatory      Boolean                  @default(false)
+  badgeName        String
+  lessonsJson      String                   // Stored JSON of lessons
+  quizJson         String                   // Stored JSON of quiz questions
+  createdAt        DateTime                 @default(now())
+
+  progressRecords  EmployeeCourseProgress[]
 
   @@map("courses")
 }
 
 model EmployeeCourseProgress {
   id              String    @id @default(uuid())
-  employeeId      String    @map("employee_id")
+  employeeId      String
   employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  courseId        String    @map("course_id")
+  courseId        String
   course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  progressPercent Int       @default(0) @map("progress_percent")
-  isCompleted     Boolean   @default(false) @map("is_completed")
-  score           Int       @default(0)
-  completedAt     DateTime? @map("completed_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
+  progressPercent Int       @default(0)
+  isCompleted     Boolean   @default(false)
+  score           Int?
+  completedAt     String?
+  updatedAt       DateTime  @updatedAt
 
   @@unique([employeeId, courseId])
   @@map("employee_course_progress")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  userEmail  String?
+  userRole   String?
+  action     String
+  resource   String
+  ipAddress  String?
+  status     String   @default("SUCCESS") // 'SUCCESS' | 'FAILURE'
+  details    String?  // JSON string
+  timestamp  DateTime @default(now())
+
+  @@map("audit_logs")
 }

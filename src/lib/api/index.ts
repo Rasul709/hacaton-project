@@ -9,14 +9,21 @@ import {
   DashboardOverview,
   PaginationParams,
   PaginatedResult,
+  SalaryAdvanceRequest,
+  CertificateRequest,
+  Course,
+  AiProviderInfo,
+  ChatMessage,
+  KnowledgeSource,
 } from '@/types';
+
 import { apiRequest, setClientToken } from './client';
 import { mockService } from './mockService';
 
 // Determine initial demo mode state:
 // 1. From localStorage if user toggled it
 // 2. Or from VITE_ENABLE_MOCK environment variable
-// 3. Defaults to true for smooth hackathon demonstration if backend isn't running yet!
+// 3. Defaults to true for local preview fallback if backend server isn't running
 const DEMO_STORAGE_KEY = 'jp_demo_mode_enabled';
 
 export function isDemoModeEnabled(): boolean {
@@ -152,7 +159,7 @@ export const api = {
         const emp = await mockService.getEmployeeById(id);
         if (emp) {
           emp.enbekStatus = 'REGISTERED';
-          emp.enbekContractId = `ESUTD-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+          emp.enbekContractId = `KZ-ESUTD-2026-180540-${String(emp.employeeId || emp.id).replace(/\D/g, '').padStart(5, '0')}`;
           emp.enbekSyncDate = new Date().toISOString();
         }
         return { success: true, message: 'Зарегистрировано в ЕСУТД', employee: emp! };
@@ -381,32 +388,196 @@ export const api = {
     });
   },
 
+  // --- Salary Advances (NEW separate entity) ---
+  salaryAdvances: {
+    async getAll(): Promise<SalaryAdvanceRequest[]> {
+      if (isDemoModeEnabled()) {
+        return mockService.getSalaryAdvances();
+      }
+      return apiRequest<SalaryAdvanceRequest[]>('/salary-advances');
+    },
+
+    async create(data: { amount: number; reason: string; payoutDate?: string }): Promise<SalaryAdvanceRequest> {
+      if (isDemoModeEnabled()) {
+        return mockService.createSalaryAdvance(data);
+      }
+      return apiRequest<SalaryAdvanceRequest>('/salary-advances', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async approve(id: string, comment?: string): Promise<SalaryAdvanceRequest> {
+      if (isDemoModeEnabled()) {
+        return mockService.approveSalaryAdvance(id, comment);
+      }
+      return apiRequest<SalaryAdvanceRequest>(`/salary-advances/${id}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ comment }),
+      });
+    },
+
+    async reject(id: string, comment: string): Promise<SalaryAdvanceRequest> {
+      if (isDemoModeEnabled()) {
+        return mockService.rejectSalaryAdvance(id, comment);
+      }
+      return apiRequest<SalaryAdvanceRequest>(`/salary-advances/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ comment }),
+      });
+    },
+  },
+
+  // --- Certificates (NEW separate entity) ---
+  certificates: {
+    async getAll(): Promise<CertificateRequest[]> {
+      if (isDemoModeEnabled()) {
+        return mockService.getCertificates();
+      }
+      return apiRequest<CertificateRequest[]>('/certificates');
+    },
+
+    async create(data: { certificateType: string; purpose: string; language?: string }): Promise<CertificateRequest> {
+      if (isDemoModeEnabled()) {
+        return mockService.createCertificate(data as any);
+      }
+      return apiRequest<CertificateRequest>('/certificates', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+  },
+
+  // --- LMS Jana Academy (Server Persisted) ---
+  academy: {
+    async getCourses(): Promise<Course[]> {
+      if (isDemoModeEnabled()) {
+        const saved = localStorage.getItem('jp_academy_courses');
+        if (saved) {
+          try { return JSON.parse(saved); } catch {}
+        }
+        return (await import('@/features/academy/academyData')).INITIAL_COURSES;
+      }
+      return apiRequest<Course[]>('/academy/courses');
+    },
+
+    async getCourseById(id: string): Promise<Course> {
+      if (isDemoModeEnabled()) {
+        const courses = await api.academy.getCourses();
+        const found = courses.find((c) => c.id === id);
+        if (!found) throw new Error('Курс не найден');
+        return found;
+      }
+      return apiRequest<Course>(`/academy/courses/${id}`);
+    },
+
+    async updateProgress(id: string, progressPercent: number): Promise<void> {
+      if (isDemoModeEnabled()) {
+        const courses = await api.academy.getCourses();
+        const c = courses.find((item) => item.id === id);
+        if (c) {
+          c.progressPercent = progressPercent;
+          c.isCompleted = progressPercent >= 100;
+          localStorage.setItem('jp_academy_courses', JSON.stringify(courses));
+        }
+        return;
+      }
+      return apiRequest(`/academy/courses/${id}/progress`, {
+        method: 'POST',
+        body: JSON.stringify({ progressPercent }),
+      });
+    },
+
+    async submitQuiz(id: string, answers: Record<string, string>): Promise<{ passed: boolean; score: number; badgeAwarded?: string }> {
+      if (isDemoModeEnabled()) {
+        const courses = await api.academy.getCourses();
+        const c = courses.find((item) => item.id === id);
+        if (!c) throw new Error('Курс не найден');
+        let correct = 0;
+        for (const q of c.quiz) {
+          const opt = q.options.find((o) => o.isCorrect);
+          if (opt && answers[q.id] === opt.id) correct += 1;
+        }
+        const score = Math.round((correct / (c.quiz.length || 1)) * 100);
+        const passed = score >= 80;
+        c.progressPercent = 100;
+        c.isCompleted = passed;
+        c.score = score;
+        localStorage.setItem('jp_academy_courses', JSON.stringify(courses));
+        return { passed, score, badgeAwarded: passed ? c.badgeName : undefined };
+      }
+      return apiRequest(`/academy/courses/${id}/quiz`, {
+        method: 'POST',
+        body: JSON.stringify({ answers }),
+      });
+    },
+  },
+
   // --- Statutory Documents (Kazakhstan Labor Code Forms) ---
   documents: {
     getLeaveOrderUrl: (id: string) => {
-      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       return `${base.replace(/\/$/, '')}/documents/leave-order/${id}`;
     },
     getEmployeeCardUrl: (id: string) => {
-      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       return `${base.replace(/\/$/, '')}/documents/employee-card/${id}`;
     },
     getTimesheetUrl: () => {
-      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       return `${base.replace(/\/$/, '')}/documents/timesheet`;
     },
     getPayslipUrl: (id: string, month?: string) => {
-      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       const q = month ? `?month=${encodeURIComponent(month)}` : '';
       return `${base.replace(/\/$/, '')}/documents/payslip/${id}${q}`;
     },
     getContractUrl: (id: string) => {
-      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       return `${base.replace(/\/$/, '')}/documents/contract/${id}`;
     },
     get1cExportUrl: () => {
-      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+      const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       return `${base.replace(/\/$/, '')}/documents/export-1c`;
+    },
+    getVerifyUrl: (id: string) => {
+      const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      return `${base.replace(/\/$/, '')}/documents/verify/${id}`;
+    },
+    verify: (id: string) => {
+      return apiRequest<any>(`/documents/verify/${id}`);
+    },
+  },
+
+  // --- Real AI HR Consultant & Grounded RAG ---
+  ai: {
+    async getStatus(): Promise<{
+      active: boolean;
+      hasServerKey: boolean;
+      defaultProvider: string;
+      defaultModel: string;
+      providers: Record<string, AiProviderInfo>;
+    }> {
+      return apiRequest('/ai/status');
+    },
+
+    async chat(params: {
+      message: string;
+      history?: ChatMessage[];
+      provider?: string;
+      model?: string;
+      apiKey?: string;
+    }): Promise<{
+      text: string;
+      sources: KnowledgeSource[];
+      isOutOfScope?: boolean;
+      modelUsed?: string;
+      latencyMs?: number;
+    }> {
+      return apiRequest('/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
     },
   },
 
@@ -414,3 +585,4 @@ export const api = {
     resetData: () => mockService.resetDemoData(),
   },
 };
+

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen,
   CheckCircle2,
@@ -12,21 +13,15 @@ import {
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { Course } from '@/types';
-import { INITIAL_COURSES } from './academyData';
+import { api } from '@/lib/api';
 
 export const AcademyPage: React.FC = () => {
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  const [courses, setCourses] = useState<Course[]>(() => {
-    const saved = localStorage.getItem('jp_academy_courses');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // fallback
-      }
-    }
-    return INITIAL_COURSES;
+  const { data: courses = [] } = useQuery({
+    queryKey: ['academyCourses'],
+    queryFn: () => api.academy.getCourses(),
   });
 
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
@@ -35,10 +30,6 @@ export const AcademyPage: React.FC = () => {
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState<number | null>(null);
-
-  useEffect(() => {
-    localStorage.setItem('jp_academy_courses', JSON.stringify(courses));
-  }, [courses]);
 
   const completedCount = courses.filter((c) => c.isCompleted).length;
   const overallProgress = courses.length > 0 ? Math.round((completedCount / courses.length) * 100) : 0;
@@ -54,12 +45,16 @@ export const AcademyPage: React.FC = () => {
 
   const handleNextLesson = () => {
     if (!activeCourse) return;
+    const nextIdx = currentLessonIndex + 1;
+    const pct = Math.round((nextIdx / activeCourse.lessons.length) * 80);
+    api.academy.updateProgress(activeCourse.id, pct).catch(() => {});
     if (currentLessonIndex < activeCourse.lessons.length - 1) {
-      setCurrentLessonIndex((prev) => prev + 1);
+      setCurrentLessonIndex(nextIdx);
     } else {
       setIsTakingQuiz(true);
     }
   };
+
 
   const handlePrevLesson = () => {
     if (isTakingQuiz) {
@@ -74,51 +69,35 @@ export const AcademyPage: React.FC = () => {
     setQuizAnswers((prev) => ({ ...prev, [questionId]: optionId }));
   };
 
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     if (!activeCourse) return;
 
-    let correct = 0;
-    activeCourse.quiz.forEach((q) => {
-      const selected = q.options.find((opt) => opt.id === quizAnswers[q.id]);
-      if (selected && selected.isCorrect) {
-        correct++;
+    try {
+      const res = await api.academy.submitQuiz(activeCourse.id, quizAnswers);
+      setQuizScore(res.score);
+      setQuizSubmitted(true);
+      queryClient.invalidateQueries({ queryKey: ['academyCourses'] });
+
+      if (res.passed) {
+        toast.success(
+          'Поздравляем! Курс успешно сдан 🎉',
+          `Результат: ${res.score}%. Сертификат «${activeCourse.badgeName}» зафиксирован в кадровом реестре.`
+        );
+        setActiveCourse((prev) => (prev ? { ...prev, isCompleted: true, progressPercent: 100, score: res.score } : null));
+      } else {
+        toast.error(
+          'Тест не пройден',
+          `Результат: ${res.score}%. Для получения сертификата необходимо минимум 80% правильных ответов.`
+        );
       }
-    });
-
-    const percent = activeCourse.quiz.length > 0 ? Math.round((correct / activeCourse.quiz.length) * 100) : 100;
-    setQuizScore(percent);
-    setQuizSubmitted(true);
-
-    if (percent >= 66) {
-      toast.success(
-        'Поздравляем! Курс успешно сдан 🎉',
-        `Результат: ${percent}%. Сертификат «${activeCourse.badgeName}» добавлен в ваш профиль.`
-      );
-      // Update course state
-      setCourses((prev) =>
-        prev.map((c) =>
-          c.id === activeCourse.id
-            ? { ...c, isCompleted: true, progressPercent: 100, score: percent }
-            : c
-        )
-      );
-      setActiveCourse((prev) => (prev ? { ...prev, isCompleted: true, progressPercent: 100, score: percent } : null));
-    } else {
-      toast.error(
-        'Тест не пройден',
-        `Результат: ${percent}%. Для получения сертификата необходимо минимум 66% правильных ответов.`
-      );
+    } catch (err: any) {
+      toast.error('Ошибка отправки теста', err?.message);
     }
   };
 
-  const handleResetCourse = (courseId: string) => {
-    setCourses((prev) =>
-      prev.map((c) =>
-        c.id === courseId
-          ? { ...c, isCompleted: false, progressPercent: 0, score: undefined }
-          : c
-      )
-    );
+  const handleResetCourse = async (courseId: string) => {
+    await api.academy.updateProgress(courseId, 0).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: ['academyCourses'] });
     if (activeCourse?.id === courseId) {
       setActiveCourse((prev) => (prev ? { ...prev, isCompleted: false, progressPercent: 0, score: undefined } : null));
       setIsTakingQuiz(false);
@@ -129,6 +108,7 @@ export const AcademyPage: React.FC = () => {
     }
     toast.info('Прогресс сброшен', 'Вы можете пройти курс и проверочный тест заново.');
   };
+
 
   // If a course is active, render interactive Player
   if (activeCourse) {
