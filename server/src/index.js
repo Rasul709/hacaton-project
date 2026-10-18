@@ -1464,6 +1464,7 @@ app.get('/api/v1/ai/status', (req, res) => {
 
 app.post('/api/v1/ai/chat', async (req, res) => {
   const { message, history, provider, model, apiKey } = req.body;
+  console.log(`[AI Chat Request] "${message}" | Provider: ${provider} | Model: ${model}`);
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'Пожалуйста, укажите текст вопроса' });
   }
