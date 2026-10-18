@@ -1,14 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthContext';
-import { isDemoModeEnabled, setDemoModeEnabled, api } from '@/lib/api';
+import { api } from '@/lib/api';
 import { formatKazakhstanDate, formatKazakhstanTime } from '@/lib/utils';
 import {
   Menu,
   Bell,
   Search,
-  Database,
-  Radio,
   LogOut,
   User as UserIcon,
   Settings as SettingsIcon,
@@ -27,7 +25,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch
   const { user, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
-  const isDemo = isDemoModeEnabled();
   const queryClient = useQueryClient();
 
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -126,31 +123,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle, onOpenSearch
 
         {/* Jury / Pitch Walkthrough Mode */}
         <JuryDemoWidget />
-
-        {/* Demo Mode Toggle Badge */}
-        <div className="flex items-center">
-          <button
-            onClick={() => setDemoModeEnabled(!isDemo)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all ${
-              isDemo
-                ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-            }`}
-            title="Нажмите, чтобы переключить режим Demo / Live Backend"
-          >
-            {isDemo ? (
-              <>
-                <Radio className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                <span className="hidden md:inline">Режим:</span> ДЕМО
-              </>
-            ) : (
-              <>
-                <Database className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden md:inline">Сервер:</span> LIVE API
-              </>
-            )}
-          </button>
-        </div>
 
         {/* Notifications Popover */}
         <div className="relative" ref={notifRef}>

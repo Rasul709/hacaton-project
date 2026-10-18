@@ -136,7 +136,7 @@ export const DashboardPage: React.FC = () => {
       <div className="p-8 bg-white rounded-2xl border border-red-200 text-center text-red-600">
         <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
         <p className="font-semibold">Не удалось загрузить показатели дашборда</p>
-        <p className="text-xs text-slate-500 mt-1">Проверьте подключение к API или переключитесь в Демо-режим</p>
+        <p className="text-xs text-slate-500 mt-1">Пожалуйста, обновите страницу</p>
       </div>
     );
   }

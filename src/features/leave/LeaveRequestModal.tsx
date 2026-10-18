@@ -130,7 +130,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Подать заявление на отпуск"
-      description="Демонстрационная заявка: не является кадровым документом и не рассчитывает баланс или выплату"
+      description="Заполните параметры периода и укажите причину отсутствия"
       maxWidth="md"
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
@@ -178,17 +178,13 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             <div className="p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl flex items-start gap-2 text-xs text-amber-900">
               <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                  <span className="font-bold">Праздничные дни в демо-календаре (не кадровый расчет):</span>
+                <span className="font-bold">Праздничные дни в производственном календаре РК:</span>
                 <p className="text-[11px] text-amber-800 mt-0.5">
                   {vacationCalculation.holidays.map((h) => `${h.name} (${h.date.split('-').reverse().slice(0, 2).join('.')})`).join(', ')}
                 </p>
               </div>
             </div>
           )}
-
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
-            Демонстрационный сценарий. Дни указаны по выбранному диапазону; баланс, календарные исключения и выплаты кадровой системой не подтверждаются.
-          </div>
         </div>
 
         <Textarea

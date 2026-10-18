@@ -1383,8 +1383,11 @@ app.get('/api/v1/documents/employee-card/:id', async (req, res) => {
 });
 
 app.get('/api/v1/documents/timesheet', async (req, res) => {
-  const attendanceList = await prisma.attendanceRecord.findMany({ take: 100 });
-  const html = renderTimesheetT13(attendanceList);
+  const [attendanceList, employees] = await Promise.all([
+    prisma.attendanceRecord.findMany({ take: 100 }),
+    prisma.employee.findMany(),
+  ]);
+  const html = renderTimesheetT13(attendanceList, employees);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
 });
@@ -1454,7 +1457,7 @@ app.get('/api/v1/ai/status', (req, res) => {
     active: true,
     hasServerKey,
     defaultProvider: 'openrouter',
-    defaultModel: 'nvidia/nemotron-3.5-super-vl:free',
+    defaultModel: 'openrouter/free',
     providers: AI_PROVIDERS,
   });
 });
@@ -1470,7 +1473,7 @@ app.post('/api/v1/ai/chat', async (req, res) => {
       message: message.trim(),
       history: history || [],
       provider: provider || 'openrouter',
-      model: model || 'nvidia/nemotron-3.5-super-vl:free',
+      model: model || 'openrouter/free',
       apiKey,
     });
     res.json(result);

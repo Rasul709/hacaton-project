@@ -27,15 +27,11 @@ import { mockService } from './mockService';
 const DEMO_STORAGE_KEY = 'jp_demo_mode_enabled';
 
 export function isDemoModeEnabled(): boolean {
-  const stored = localStorage.getItem(DEMO_STORAGE_KEY);
-  if (stored !== null) {
-    return stored === 'true';
-  }
   const envVal = import.meta.env.VITE_ENABLE_MOCK;
-  if (envVal !== undefined) {
-    return envVal === 'true';
+  if (envVal === 'false') {
+    return false;
   }
-  return false; // Default to Live API mode
+  return true; // Default to Demo mode
 }
 
 export function setDemoModeEnabled(enabled: boolean): void {

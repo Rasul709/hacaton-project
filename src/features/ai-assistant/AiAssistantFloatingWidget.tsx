@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ChatMessage } from '@/types';
-import { askAiAssistant, queryHrAssistant, POPULAR_QUESTIONS } from './aiKnowledgeService';
+import { askAiAssistant, queryHrAssistant, stripAsterisks, POPULAR_QUESTIONS } from './aiKnowledgeService';
 
 export const AiAssistantFloatingWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,7 +19,7 @@ export const AiAssistantFloatingWidget: React.FC = () => {
       id: 'floating-welcome',
       sender: 'assistant',
       text:
-        'Здравствуйте! Я универсальный корпоративный AI-ассистент Jana Post. Готов ответить на любые вопросы, составить письмо, помочь с расчетами или дать нормативную справку по ТК РК.',
+        'Здравствуйте! Я виртуальный AI HR-консультант Jana Post. Отвечаю на любые вопросы «своей головой» по нормам ТК РК и регламентам компании: рассчитаю смены, отпуск, составлю служебную записку или заявление.',
       timestamp: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit' }),
       sources: [
         {
@@ -149,7 +149,7 @@ export const AiAssistantFloatingWidget: React.FC = () => {
                       : 'bg-white text-slate-800 border border-slate-200 rounded-bl-xs shadow-2xs'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{msg.text}</div>
+                  <div className="whitespace-pre-wrap">{stripAsterisks(msg.text)}</div>
 
                   {msg.sources && msg.sources.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 space-y-0.5">

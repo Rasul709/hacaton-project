@@ -20,6 +20,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ChatMessage } from '@/types';
 import {
   askAiAssistant,
+  stripAsterisks,
   POPULAR_QUESTIONS,
   AI_MODEL_BENCHMARKS,
 } from './aiKnowledgeService';
@@ -29,9 +30,13 @@ export const AiAssistantPage: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<string>(
     () => localStorage.getItem('jp_ai_provider') || 'openrouter'
   );
-  const [selectedModel, setSelectedModel] = useState<string>(
-    () => localStorage.getItem('jp_ai_model') || 'nvidia/nemotron-3.5-super-vl:free'
-  );
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    const stored = localStorage.getItem('jp_ai_model');
+    if (!stored || stored === 'nvidia/nemotron-3.5-super-vl:free' || stored === 'nvidia/nemotron-3.5-content-safety:free') {
+      return 'openrouter/free';
+    }
+    return stored;
+  });
   const [apiKey, setApiKey] = useState<string>(
     () => localStorage.getItem('jp_ai_api_key') || ''
   );
@@ -51,7 +56,7 @@ export const AiAssistantPage: React.FC = () => {
       id: 'welcome',
       sender: 'assistant',
       text:
-        'Здравствуйте! Я виртуальный **AI HR-консультант АО «Jana Post»**.\n\nЯ подключен к Трудовому кодексу Республики Казахстан (ТК РК ст. 88, 90, 92, 96, 108–110, 113, 182) и корпоративным регламентам логистической сети Jana Post 2026.\n\nГотов ответить на любые вопросы по отпускам, ночным сменам, выплатам зарплаты, авансам, справкам Т-2 и адаптации в Jana Academy. Ответы верифицируются статьями законодательства РК.',
+        'Здравствуйте! Я виртуальный AI HR-консультант АО «Jana Post».\n\nЯ отвечаю на вопросы «своей головой» без заготовленных шаблонных текстов, строго руководствуясь Трудовым кодексом Республики Казахстан (ТК РК ст. 88, 90, 92, 96, 108–110, 113, 182) и корпоративными регламентами Jana Post 2026.\n\nГотов рассчитать ночные смены, дни отпуска с учетом праздников, составить официальную служебную записку или заявление, подсказать даты зарплаты и аванса.',
       timestamp: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit' }),
       modelUsed: activeBenchmark.name,
       sources: [
@@ -277,7 +282,7 @@ export const AiAssistantPage: React.FC = () => {
                   )}
 
                   {/* Message body with Markdown support */}
-                  <div className="whitespace-pre-wrap">{msg.text}</div>
+                  <div className="whitespace-pre-wrap">{stripAsterisks(msg.text)}</div>
 
                   {/* Grounded Sources Box */}
                   {msg.sources && msg.sources.length > 0 && (

@@ -25,6 +25,17 @@ const DEFAULT_EMPLOYEE_ROLES = {
   'emp-8': 'EMPLOYEE',
 };
 
+const DEFAULT_EMPLOYEE_IINS = {
+  'emp-1': '920415450123',
+  'emp-2': '880620350412',
+  'emp-3': '900812350789',
+  'emp-4': '931105450654',
+  'emp-5': '890325350321',
+  'emp-6': '950718350987',
+  'emp-7': '960924450543',
+  'emp-8': '910214350210',
+};
+
 const INITIAL_COURSES = [
   {
     id: 'course-1',
@@ -215,7 +226,7 @@ export async function initDatabase() {
                 address: e.address || null,
                 emergencyContact: e.emergencyContact || null,
                 salary: e.salary || (assignedRole === 'ADMIN' ? 950000 : assignedRole === 'DEPARTMENT_HEAD' ? 750000 : 380000),
-                iin: e.iin || '940512300412',
+                iin: e.iin || DEFAULT_EMPLOYEE_IINS[e.id] || '940512300412',
                 contractNumber: e.contractNumber || `KZ-JP-${e.employeeId}`,
                 enbekStatus: e.enbekStatus || 'REGISTERED',
                 enbekContractId: e.enbekContractId || `KZ-ESUTD-2026-180540-${String(e.employeeId || e.id).replace(/\D/g, '').padStart(5, '0')}`,

@@ -41,3 +41,9 @@ database/prisma/*.db
 database/prisma/*.db-journal
 *.db
 *.db-journal
+
+# Presentation build artifacts & scratch previews
+.codex-pptx-build/
+scripts/*_preview.png
+scripts/test.*
+scripts/test_card_out.pptx
